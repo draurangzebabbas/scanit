@@ -28,16 +28,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <section className="mx-auto max-w-4xl p-4 sm:p-6 space-y-6 font-mono">
       {/* Hero Container */}
-      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm">
+      <article className="rounded-xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <header className="max-w-xl space-y-2">
-            <span className="inline-block rounded bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+            <span className="inline-block rounded bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600 border border-blue-200">
               Offline-First • Barcode &amp; Inventory Engine
             </span>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               Scanit Inventory Monitor
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
               Scan product UPC/EAN barcodes instantly. Photos and custom item attributes save locally in milliseconds and sync directly to your Google Sheet &amp; Drive.
             </p>
           </header>
@@ -53,7 +53,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
             <button
               onClick={onOpenSettings}
-              className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-800/60 py-2.5 px-4 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+              className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 dark:bg-slate-800/60 py-2.5 px-4 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
               aria-label="Configure Google Drive & Sheets"
             >
               <span>⚙️</span>
@@ -65,26 +65,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Metrics Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500">
             <span>Total Scanned</span>
             <span>📦</span>
           </div>
-          <span className="block text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
+          <span className="block text-2xl font-bold text-gray-900">{total}</span>
           <p className="text-[11px] text-gray-400">Items stored in browser</p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500">
             <span>Synced to Google</span>
             <span>✓</span>
           </div>
-          <span className="block text-2xl font-bold text-blue-600 dark:text-blue-400">{synced}</span>
+          <span className="block text-2xl font-bold text-blue-600">{synced}</span>
           <p className="text-[11px] text-gray-400">Rows in Google Sheet</p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500">
             <span>Sync Queue</span>
             <span>⚙</span>
           </div>
@@ -94,15 +94,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Recent Inventory Scans */}
-      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+      <article className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
-          <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
             Recent Scanned Products
           </h2>
           {products.length > 0 && (
             <button
               onClick={onViewHistory}
-              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-xs font-semibold text-blue-600 hover:underline"
             >
               View All ({products.length}) →
             </button>
@@ -118,22 +118,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {recent.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-950/50 p-3"
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
               >
                 <div className="flex items-center gap-3">
                   {p.photos && p.photos.length > 0 ? (
                     <img
                       src={p.photos[0].dataUrl}
                       alt={p.fields?.title || 'Product'}
-                      className="h-11 w-11 rounded border border-gray-200 dark:border-gray-800 object-cover"
+                      className="h-11 w-11 rounded border border-gray-200 object-cover"
                     />
                   ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded bg-gray-200 dark:bg-slate-800 text-base">
+                    <div className="flex h-11 w-11 items-center justify-center rounded bg-gray-200 text-base">
                       📦
                     </div>
                   )}
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[140px]">
+                    <p className="text-xs font-bold text-gray-900 truncate max-w-[140px]">
                       {p.fields?.title || 'Untitled Product'}
                     </p>
                     <p className="font-mono text-[10px] text-gray-500">{p.upc}</p>
@@ -143,8 +143,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span
                   className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
                     p.syncStatus === 'synced'
-                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                      ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                      : 'bg-amber-50 text-amber-600 border border-amber-200'
                   }`}
                 >
                   {p.syncStatus === 'synced' ? '✓ Synced' : 'Pending'}

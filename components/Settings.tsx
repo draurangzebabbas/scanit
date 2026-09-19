@@ -1,6 +1,42 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+
+// SVG icon components
+const IconShield = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+  </svg>
+);
+const IconSheet = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+    <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+    <path d="M8 13h2"/>
+    <path d="M14 13h2"/>
+    <path d="M8 17h2"/>
+    <path d="M14 17h2"/>
+  </svg>
+);
+const IconFolder = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+  </svg>
+);
+const IconSliders = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="4" x2="4" y1="21" y2="14"/>
+    <line x1="4" x2="4" y1="6" y2="3"/>
+    <line x1="12" x2="12" y1="21" y2="12"/>
+    <line x1="12" x2="12" y1="4" y2="3"/>
+    <line x1="20" x2="20" y1="21" y2="16"/>
+    <line x1="20" x2="20" y1="8" y2="3"/>
+    <line x1="1" x2="7" y1="14" y2="14"/>
+    <line x1="9" x2="15" y1="12" y2="12"/>
+    <line x1="17" x2="23" y1="16" y2="16"/>
+  </svg>
+);
+
 import {
   getGoogleConfig,
   saveGoogleConfig,
@@ -290,8 +326,8 @@ export const Settings: React.FC = () => {
   return (
     <section className="mx-auto max-w-4xl p-4 sm:p-6 space-y-6 font-mono">
       <header>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Settings &amp; Integration</h1>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <h1 className="text-xl font-bold text-gray-900">Settings &amp; Integration</h1>
+        <p className="text-xs text-gray-500 mt-1">
           Connect your Google Account, Sheets, Drive folder, and configure custom product fields.
         </p>
       </header>
@@ -300,8 +336,8 @@ export const Settings: React.FC = () => {
         <div
           className={`rounded-lg p-3 text-xs font-semibold ${
             statusMessage.isError
-              ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
-              : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+              ? 'bg-rose-50 text-rose-600 border border-rose-200'
+              : 'bg-blue-50 text-blue-600 border border-blue-200'
           }`}
         >
           {statusMessage.text}
@@ -309,43 +345,43 @@ export const Settings: React.FC = () => {
       )}
 
       {/* 1. GOOGLE OAUTH CARD */}
-      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+      <article className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">🔐</span>
+            <span className="text-blue-600"><IconShield /></span>
             <div>
-              <h2 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+              <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                 1. Google Account Connection
               </h2>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">Authorize direct browser access to your Google Drive &amp; Sheets</p>
+              <p className="text-[11px] text-gray-500">Authorize direct browser access to your Google Drive &amp; Sheets</p>
             </div>
           </div>
           {session && (
-            <span className="rounded bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+            <span className="rounded bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
               Connected
             </span>
           )}
         </div>
 
         {session ? (
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-950/50 p-3.5">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3.5">
             <div className="flex items-center gap-3">
               {session.picture ? (
-                <img src={session.picture} alt="Avatar" className="h-8 w-8 rounded-full border border-gray-200 dark:border-gray-800" />
+                <img src={session.picture} alt="Avatar" className="h-8 w-8 rounded-full border border-gray-200" />
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 font-bold text-white text-xs">
                   {session.email ? session.email[0].toUpperCase() : 'G'}
                 </div>
               )}
               <div>
-                <p className="text-xs font-bold text-gray-900 dark:text-white">{session.name || 'Google User'}</p>
+                <p className="text-xs font-bold text-gray-900">{session.name || 'Google User'}</p>
                 <p className="text-[10px] font-mono text-gray-500">{session.email}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={handleSignOut}
-              className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition"
             >
               Sign Out
             </button>
@@ -365,35 +401,35 @@ export const Settings: React.FC = () => {
       </article>
 
       {/* 2. GOOGLE SHEETS CARD */}
-      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+      <article className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">📊</span>
+            <span className="text-green-600"><IconSheet /></span>
             <div>
-              <h2 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+              <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                 2. Google Sheet Connection
               </h2>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">Store inventory product rows and dynamic fields</p>
+              <p className="text-[11px] text-gray-500">Store inventory product rows and dynamic fields</p>
             </div>
           </div>
           {config.spreadsheetId && (
-            <span className="rounded bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+            <span className="rounded bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-semibold text-green-700">
               Connected
             </span>
           )}
         </div>
 
         {config.spreadsheetId ? (
-          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-950/50 p-3.5 space-y-2">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-gray-900 dark:text-white">{config.spreadsheetName || 'Scanit Database'}</p>
-                <p className="text-[10px] font-mono text-gray-500">ID: {config.spreadsheetId}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-gray-900 truncate">{config.spreadsheetName || 'Scanit Database'}</p>
+                <p className="text-[10px] font-mono text-gray-500 truncate">ID: {config.spreadsheetId}</p>
               </div>
               <button
                 type="button"
                 onClick={handleDisconnectSheet}
-                className="text-xs text-rose-500 hover:underline"
+                className="text-xs text-rose-500 hover:underline ml-3 flex-shrink-0"
               >
                 Disconnect
               </button>
@@ -403,7 +439,7 @@ export const Settings: React.FC = () => {
                 href={config.spreadsheetUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                className="inline-flex items-center gap-1 text-[11px] text-green-700 hover:underline font-semibold"
               >
                 <span>Open Google Sheet</span>
                 <span>↗</span>
@@ -413,8 +449,8 @@ export const Settings: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {/* Create New Custom Named Sheet */}
-            <div className="rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-950/20 p-3 space-y-2">
-              <label className="block text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            <div className="rounded-lg border border-green-100 bg-green-50/40 p-3 space-y-2">
+              <label className="block text-[11px] font-bold text-green-700 uppercase tracking-wider">
                 Create New Sheet with Custom Name
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -423,13 +459,13 @@ export const Settings: React.FC = () => {
                   value={newSheetName}
                   onChange={(e) => setNewSheetName(e.target.value)}
                   placeholder="Enter sheet name (e.g. Scanit Database 2026)"
-                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-mono text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                  className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-mono text-gray-900 focus:border-green-500 focus:outline-none"
                 />
                 <button
                   type="button"
                   disabled={isProcessingSheet || !session}
                   onClick={handleCreateSheet}
-                  className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50"
+                  className="rounded-lg bg-green-600 hover:bg-green-500 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50"
                 >
                   {isProcessingSheet ? 'Creating...' : '+ Create Sheet'}
                 </button>
@@ -437,9 +473,9 @@ export const Settings: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 my-1">
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+              <div className="h-px flex-1 bg-gray-200" />
               <span className="text-[10px] text-gray-400 font-semibold uppercase">Or connect existing sheet</span>
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+              <div className="h-px flex-1 bg-gray-200" />
             </div>
 
             <div className="flex gap-2">
@@ -448,13 +484,13 @@ export const Settings: React.FC = () => {
                 value={sheetInput}
                 onChange={(e) => setSheetInput(e.target.value)}
                 placeholder="Paste Google Sheet URL or ID"
-                className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs font-mono text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-mono text-gray-900 focus:border-green-500 focus:outline-none"
               />
               <button
                 type="button"
                 disabled={isProcessingSheet || !session}
                 onClick={handleConnectExistingSheet}
-                className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-slate-800 px-4 py-2 text-xs font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700 transition disabled:opacity-50"
+                className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-gray-200 transition disabled:opacity-50"
               >
                 Connect
               </button>
@@ -464,35 +500,35 @@ export const Settings: React.FC = () => {
       </article>
 
       {/* 3. GOOGLE DRIVE FOLDER CARD */}
-      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+      <article className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">📁</span>
+            <span className="text-blue-500"><IconFolder /></span>
             <div>
-              <h2 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+              <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                 3. Google Drive Folder Connection
               </h2>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">Save product photos directly to your Google Drive</p>
+              <p className="text-[11px] text-gray-500">Save product photos directly to your Google Drive</p>
             </div>
           </div>
           {config.driveFolderId && (
-            <span className="rounded bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+            <span className="rounded bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
               Connected
             </span>
           )}
         </div>
 
         {config.driveFolderId ? (
-          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-950/50 p-3.5 space-y-2">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-gray-900 dark:text-white">{config.driveFolderName || 'Scanit Photos'}</p>
-                <p className="text-[10px] font-mono text-gray-500">ID: {config.driveFolderId}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-gray-900 truncate">{config.driveFolderName || 'Scanit Photos'}</p>
+                <p className="text-[10px] font-mono text-gray-500 truncate">ID: {config.driveFolderId}</p>
               </div>
               <button
                 type="button"
                 onClick={handleDisconnectFolder}
-                className="text-xs text-rose-500 hover:underline"
+                className="text-xs text-rose-500 hover:underline ml-3 flex-shrink-0"
               >
                 Disconnect
               </button>
@@ -502,7 +538,7 @@ export const Settings: React.FC = () => {
                 href={config.driveFolderUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline font-semibold"
               >
                 <span>Open Drive Folder</span>
                 <span>↗</span>
@@ -512,8 +548,8 @@ export const Settings: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {/* Create New Custom Named Folder */}
-            <div className="rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-950/20 p-3 space-y-2">
-              <label className="block text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3 space-y-2">
+              <label className="block text-[11px] font-bold text-blue-600 uppercase tracking-wider">
                 Create New Folder with Custom Name
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -522,7 +558,7 @@ export const Settings: React.FC = () => {
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   placeholder="Enter folder name (e.g. Scanit Photos 2026)"
-                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-mono text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                  className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-mono text-gray-900 focus:border-blue-500 focus:outline-none"
                 />
                 <button
                   type="button"
@@ -536,9 +572,9 @@ export const Settings: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 my-1">
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+              <div className="h-px flex-1 bg-gray-200" />
               <span className="text-[10px] text-gray-400 font-semibold uppercase">Or connect existing folder</span>
-              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+              <div className="h-px flex-1 bg-gray-200" />
             </div>
 
             <div className="flex gap-2">
@@ -547,13 +583,13 @@ export const Settings: React.FC = () => {
                 value={folderInput}
                 onChange={(e) => setFolderInput(e.target.value)}
                 placeholder="Paste Google Drive Folder URL or ID"
-                className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs font-mono text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-mono text-gray-900 focus:border-blue-500 focus:outline-none"
               />
               <button
                 type="button"
                 disabled={isProcessingFolder || !session}
                 onClick={handleConnectExistingFolder}
-                className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-slate-800 px-4 py-2 text-xs font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700 transition disabled:opacity-50"
+                className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-gray-200 transition disabled:opacity-50"
               >
                 Connect
               </button>
@@ -563,18 +599,21 @@ export const Settings: React.FC = () => {
       </article>
 
       {/* 4. PRODUCT FIELDS BUILDER */}
-      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+      <article className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-              4. Product Fields Builder
-            </h2>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">Add, edit, or delete any product attribute field</p>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600"><IconSliders /></span>
+            <div>
+              <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                4. Product Fields Builder
+              </h2>
+              <p className="text-[11px] text-gray-500">Add, edit, or delete any product attribute field</p>
+            </div>
           </div>
           <button
             type="button"
             onClick={handleAddField}
-            className="rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 px-2.5 py-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition"
+            className="rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-100 transition"
           >
             + Add Field
           </button>
@@ -587,20 +626,20 @@ export const Settings: React.FC = () => {
             fields.map((field, idx) => (
               <div
                 key={field.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-950/50 p-3"
+                className="flex flex-col sm:flex-row items-start sm:items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3"
               >
                 <input
                   type="text"
                   value={field.name}
                   onChange={(e) => handleFieldChange(idx, 'name', e.target.value)}
                   placeholder="Field name"
-                  className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                  className="flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none"
                 />
 
                 <select
                   value={field.type}
                   onChange={(e) => handleFieldChange(idx, 'type', e.target.value)}
-                  className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none"
                 >
                   <option value="text">Text</option>
                   <option value="number">Number</option>
@@ -630,7 +669,7 @@ export const Settings: React.FC = () => {
           className={`w-full rounded-lg py-2.5 text-xs font-bold transition shadow-sm ${
             isFieldsDirty
               ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer opacity-100'
-              : 'bg-gray-200 dark:bg-slate-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60'
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
           }`}
         >
           {isSavingFields
@@ -642,17 +681,17 @@ export const Settings: React.FC = () => {
       </article>
 
       {/* DANGER ZONE */}
-      <article className="rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/30 dark:bg-rose-950/10 p-4">
-        <h2 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-1">
+      <article className="rounded-xl border border-rose-200 bg-rose-50/30 p-4">
+        <h2 className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1">
           Local Storage Reset
         </h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+        <p className="text-xs text-gray-500 mb-3">
           Wipe all scanned items stored in this browser cache.
         </p>
         <button
           type="button"
           onClick={handleClearDatabase}
-          className="rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-100 dark:bg-rose-900/30 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-200 transition"
+          className="rounded-lg border border-rose-300 bg-rose-100 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-200 transition"
         >
           Clear Local Database
         </button>

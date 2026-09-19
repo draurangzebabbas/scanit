@@ -79,8 +79,8 @@ export const History: React.FC = () => {
       {/* Top Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Local Inventory</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <h2 className="text-xl font-bold text-gray-900">Local Inventory</h2>
+          <p className="text-xs text-gray-500 mt-0.5">
             {products.length} products stored locally in browser
           </p>
         </div>
@@ -113,10 +113,10 @@ export const History: React.FC = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by UPC, Title, or ID..."
-          className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+          className="flex-1 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-mono text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
         />
 
-        <div className="flex rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-1">
+        <div className="flex rounded-lg border border-gray-200 bg-white p-1">
           {(['all', 'pending', 'synced'] as const).map((mode) => (
             <button
               key={mode}
@@ -124,7 +124,7 @@ export const History: React.FC = () => {
               className={`rounded px-3 py-1 text-xs font-semibold capitalize transition ${
                 filter === mode
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                  : 'text-gray-500 hover:text-gray-900'
               }`}
             >
               {mode}
@@ -135,7 +135,7 @@ export const History: React.FC = () => {
 
       {/* Products List */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-8 text-center text-xs text-gray-400">
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-xs text-gray-400">
           No products found matching criteria.
         </div>
       ) : (
@@ -147,30 +147,30 @@ export const History: React.FC = () => {
             return (
               <div
                 key={item.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 transition"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 transition overflow-hidden"
               >
                 {/* Left: Thumbnail & Details */}
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-start gap-3.5 min-w-0 flex-1">
                   {item.photos && item.photos.length > 0 ? (
                     <img
                       src={item.photos[0].dataUrl}
                       alt={item.fields?.title || 'Product'}
-                      className="h-14 w-14 rounded border border-gray-200 dark:border-gray-800 object-cover flex-shrink-0"
+                      className="h-14 w-14 rounded border border-gray-200 object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded bg-gray-100 dark:bg-slate-800 text-lg border border-gray-200 dark:border-gray-800">
+                    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded bg-gray-100 text-lg border border-gray-200">
                       📦
                     </div>
                   )}
 
-                  <div className="space-y-0.5">
-                    <h4 className="font-bold text-gray-900 dark:text-white text-xs">
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <h4 className="font-bold text-gray-900 text-xs truncate">
                       {item.fields?.title || 'Untitled Product'}
                     </h4>
-                    <p className="font-mono text-[11px] text-blue-600 dark:text-blue-400">
+                    <p className="font-mono text-[11px] text-blue-600 truncate">
                       UPC: {item.upc}
                     </p>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-500">
                       <span>COG: ${item.fields?.cog || 0}</span>
                       <span>•</span>
                       <span>Qty: {item.fields?.quantity || 1}</span>
@@ -178,7 +178,7 @@ export const History: React.FC = () => {
                       <span>{new Date(item.timestamp).toLocaleDateString()}</span>
                     </div>
                     {item.syncError && (
-                      <p className="text-[10px] text-rose-500 max-w-xs truncate">
+                      <p className="text-[10px] text-rose-500 break-words line-clamp-2">
                         ⚠️ {item.syncError}
                       </p>
                     )}
@@ -186,9 +186,9 @@ export const History: React.FC = () => {
                 </div>
 
                 {/* Right: Status Pill & Actions */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 border-t sm:border-t-0 border-gray-100 dark:border-gray-800 pt-2 sm:pt-0">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 border-t sm:border-t-0 border-gray-100 pt-2 sm:pt-0 flex-shrink-0">
                   {isSynced ? (
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded px-2.5 py-0.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded px-2.5 py-0.5 whitespace-nowrap">
                       <span>✓ Synced</span>
                       {item.driveFolderUrl && (
                         <a
@@ -204,12 +204,12 @@ export const History: React.FC = () => {
                   ) : isFailed ? (
                     <button
                       onClick={() => handleSyncSingle(item)}
-                      className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded px-2.5 py-0.5 hover:bg-rose-100"
+                      className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded px-2.5 py-0.5 hover:bg-rose-100 whitespace-nowrap"
                     >
                       Failed (Retry)
                     </button>
                   ) : (
-                    <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded px-2.5 py-0.5">
+                    <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-2.5 py-0.5 whitespace-nowrap">
                       Pending Sync
                     </span>
                   )}

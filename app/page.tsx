@@ -79,7 +79,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-gray-900 dark:text-gray-100 flex flex-col font-mono selection:bg-blue-500 selection:text-white transition-colors">
+    <main className="min-h-screen bg-slate-50 text-gray-900 flex flex-col font-mono selection:bg-blue-500 selection:text-white">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-blue-600 px-4 py-2 font-mono text-xs font-bold text-white shadow-xl animate-bounce">
