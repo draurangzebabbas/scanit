@@ -37,7 +37,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         else if (field.type === 'checkbox') defaults[field.id] = false;
         else defaults[field.id] = '';
       });
-      // defaults for standard fields
       defaults['quantity'] = 1;
       setFieldValues(defaults);
     });
@@ -147,19 +146,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     setIsSaving(true);
 
     try {
-      // 1. Instant Save to Local IndexedDB (<5ms)
       const savedRecord = await saveProductLocal({
         upc: upc.trim(),
         fields: fieldValues,
         photos,
       });
 
-      // 2. Trigger asynchronous background sync (Non-blocking)
       syncSingleProduct(savedRecord).catch((err) => {
         console.warn('Background sync queued:', err);
       });
 
-      // 3. Immediate UI response for user
       onSaveComplete(savedRecord, scanNext);
     } catch (e: any) {
       alert(`Save error: ${e?.message || 'Failed to save product locally'}`);
@@ -168,16 +164,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   return (
-    <div className="mx-auto max-w-xl p-4">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6 space-y-5 font-mono">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">Product Entry</h2>
-          <p className="text-xs text-gray-400">Save product details to inventory</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Product Entry</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Save product details to inventory</p>
         </div>
         <button
           onClick={onCancel}
-          className="rounded-xl border border-gray-800 bg-gray-900 px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white"
+          className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
         >
           Cancel
         </button>
@@ -185,8 +181,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
       <div className="space-y-4">
         {/* UPC Card */}
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-2">
+          <label className="block text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
             Barcode / UPC <span className="text-rose-500">*</span>
           </label>
           <input
@@ -194,115 +190,116 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             inputMode="numeric"
             value={upc}
             onChange={(e) => setUpc(e.target.value)}
-            className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3.5 py-2.5 text-sm font-mono text-emerald-400 focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm font-mono text-blue-600 dark:text-blue-400 font-bold focus:border-blue-500 focus:outline-none"
             placeholder="UPC / EAN"
           />
           {errors['upc'] && (
-            <p className="mt-1 text-xs text-rose-500">{errors['upc']}</p>
+            <p className="text-xs text-rose-500 font-semibold">{errors['upc']}</p>
           )}
         </div>
 
         {/* Dynamic Fields Form */}
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4 space-y-3.5">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+          <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-2">
             Product Attributes
           </h3>
 
-          {fields.map((field) => {
-            const val = fieldValues[field.id];
-            const hasErr = errors[field.id];
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {fields.map((field) => {
+              const val = fieldValues[field.id];
+              const hasErr = errors[field.id];
 
-            if (field.type === 'checkbox') {
+              if (field.type === 'checkbox') {
+                return (
+                  <div key={field.id} className="flex items-center gap-3 sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      id={field.id}
+                      checked={Boolean(val)}
+                      onChange={(e) => handleFieldChange(field.id, e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor={field.id} className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                      {field.name} {field.required && <span className="text-rose-500">*</span>}
+                    </label>
+                    {hasErr && <p className="text-xs text-rose-500">{hasErr}</p>}
+                  </div>
+                );
+              }
+
+              if (field.type === 'longtext') {
+                return (
+                  <div key={field.id} className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {field.name} {field.required && <span className="text-rose-500">*</span>}
+                    </label>
+                    <textarea
+                      value={val || ''}
+                      onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                      placeholder={`Enter ${field.name}`}
+                    />
+                    {hasErr && <p className="mt-1 text-xs text-rose-500">{hasErr}</p>}
+                  </div>
+                );
+              }
+
+              if (field.type === 'dropdown') {
+                return (
+                  <div key={field.id}>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {field.name} {field.required && <span className="text-rose-500">*</span>}
+                    </label>
+                    <select
+                      value={val || ''}
+                      onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="">Select option...</option>
+                      {(field.options || []).map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                    {hasErr && <p className="mt-1 text-xs text-rose-500">{hasErr}</p>}
+                  </div>
+                );
+              }
+
               return (
-                <div key={field.id} className="flex items-center gap-3">
+                <div key={field.id} className={field.id === 'title' ? 'sm:col-span-2' : ''}>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {field.name} {field.required && <span className="text-rose-500">*</span>}
+                  </label>
                   <input
-                    type="checkbox"
-                    id={field.id}
-                    checked={Boolean(val)}
-                    onChange={(e) => handleFieldChange(field.id, e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-800 bg-gray-950 text-emerald-500 focus:ring-emerald-500"
-                  />
-                  <label htmlFor={field.id} className="text-sm font-medium text-gray-300">
-                    {field.name} {field.required && <span className="text-rose-500">*</span>}
-                  </label>
-                  {hasErr && <p className="text-xs text-rose-500">{hasErr}</p>}
-                </div>
-              );
-            }
-
-            if (field.type === 'longtext') {
-              return (
-                <div key={field.id}>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">
-                    {field.name} {field.required && <span className="text-rose-500">*</span>}
-                  </label>
-                  <textarea
-                    value={val || ''}
+                    type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                    step={field.type === 'number' ? 'any' : undefined}
+                    value={val !== undefined ? val : ''}
                     onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                    rows={3}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
                     placeholder={`Enter ${field.name}`}
                   />
                   {hasErr && <p className="mt-1 text-xs text-rose-500">{hasErr}</p>}
                 </div>
               );
-            }
-
-            if (field.type === 'dropdown') {
-              return (
-                <div key={field.id}>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">
-                    {field.name} {field.required && <span className="text-rose-500">*</span>}
-                  </label>
-                  <select
-                    value={val || ''}
-                    onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                  >
-                    <option value="">Select option...</option>
-                    {(field.options || []).map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                  {hasErr && <p className="mt-1 text-xs text-rose-500">{hasErr}</p>}
-                </div>
-              );
-            }
-
-            return (
-              <div key={field.id}>
-                <label className="block text-xs font-medium text-gray-300 mb-1">
-                  {field.name} {field.required && <span className="text-rose-500">*</span>}
-                </label>
-                <input
-                  type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                  step={field.type === 'number' ? 'any' : undefined}
-                  value={val !== undefined ? val : ''}
-                  onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                  className="w-full rounded-xl border border-gray-800 bg-gray-950 px-3.5 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                  placeholder={`Enter ${field.name}`}
-                />
-                {hasErr && <p className="mt-1 text-xs text-rose-500">{hasErr}</p>}
-              </div>
-            );
-          })}
+            })}
+          </div>
         </div>
 
         {/* Photos Card */}
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
+            <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
               Product Photos ({photos.length}/5)
             </h3>
           </div>
 
-          {/* Photo Thumbnails */}
           {photos.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
               {photos.map((photo, idx) => (
-                <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-800 aspect-square">
+                <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 aspect-square">
                   <img
                     src={photo.dataUrl}
                     alt={`Photo ${idx + 1}`}
@@ -311,7 +308,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   <button
                     type="button"
                     onClick={() => removePhoto(idx)}
-                    className="absolute top-1 right-1 rounded-full bg-rose-600/90 text-white p-1 text-xs shadow hover:bg-rose-500"
+                    className="absolute top-1 right-1 rounded bg-rose-600 text-white p-1 text-[10px] hover:bg-rose-500"
                     title="Remove Photo"
                   >
                     ✕
@@ -320,13 +317,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-500 mb-3 italic">No photos added yet.</p>
+            <p className="text-xs text-gray-400 italic">No photos attached.</p>
           )}
 
-          {/* Photo Capture Buttons */}
           {photos.length < 5 && (
-            <div className="flex gap-2">
-              <label className="flex-1 cursor-pointer rounded-xl bg-gray-800/80 py-2.5 text-center text-xs font-semibold text-gray-300 hover:bg-gray-700 transition">
+            <div className="flex gap-2 pt-1">
+              <label className="flex-1 cursor-pointer rounded-lg bg-gray-100 dark:bg-slate-800 py-2.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition">
                 <span>📸 Camera</span>
                 <input
                   type="file"
@@ -337,7 +333,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 />
               </label>
 
-              <label className="flex-1 cursor-pointer rounded-xl border border-gray-800 bg-gray-950 py-2.5 text-center text-xs font-semibold text-gray-300 hover:bg-gray-900 transition">
+              <label className="flex-1 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-950 py-2.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900 transition">
                 <span>🖼️ Gallery</span>
                 <input
                   type="file"
@@ -351,13 +347,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           )}
         </div>
 
-        {/* Action Buttons: Fast Save & Scan Next */}
+        {/* Action Buttons */}
         <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
           <button
             type="button"
             disabled={isSaving}
             onClick={() => handleSave(true)}
-            className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 py-3.5 text-center text-sm font-black text-gray-950 shadow-lg shadow-emerald-500/20 hover:opacity-95 active:scale-[0.99] transition disabled:opacity-50"
+            className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-500 py-3 text-center text-xs font-bold text-white shadow-sm transition disabled:opacity-50"
           >
             ⚡ SAVE &amp; SCAN NEXT
           </button>
@@ -366,7 +362,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             type="button"
             disabled={isSaving}
             onClick={() => handleSave(false)}
-            className="rounded-2xl border border-gray-700 bg-gray-800 py-3.5 px-6 text-center text-sm font-bold text-white hover:bg-gray-700 active:scale-[0.99] transition disabled:opacity-50"
+            className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 py-3 px-6 text-center text-xs font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition disabled:opacity-50"
           >
             SAVE PRODUCT
           </button>

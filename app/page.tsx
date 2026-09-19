@@ -8,6 +8,7 @@ import { ProductForm } from '../components/ProductForm';
 import { History } from '../components/History';
 import { Settings } from '../components/Settings';
 import { getGoogleConfig, ProductRecord } from '../lib/db';
+import { getStoredAuthSession } from '../lib/googleAuth';
 import { subscribeSyncStatus, processSyncQueue } from '../lib/googleSync';
 
 export default function Home() {
@@ -43,8 +44,11 @@ export default function Home() {
       setHasDrive(Boolean(c.driveFolderUrl || c.driveFolderId));
     });
 
-    // Process any initial pending queue items in background
-    processSyncQueue().catch(() => {});
+    // Auto process background queue if authorized
+    const session = getStoredAuthSession();
+    if (session && session.accessToken) {
+      processSyncQueue().catch(() => {});
+    }
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -55,7 +59,7 @@ export default function Home() {
 
   const triggerToast = (msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   };
 
   const handleScanSuccess = (upc: string) => {
@@ -66,7 +70,6 @@ export default function Home() {
   const handleSaveComplete = (record: ProductRecord, scanNext: boolean) => {
     triggerToast(`✓ Product saved: ${record.id}`);
     if (scanNext) {
-      // INSTANT: Immediately reset and reopen scanner for next product
       setInProductEntry(false);
       setActiveTab('scanner');
     } else {
@@ -76,10 +79,10 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-950 text-gray-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
+    <main className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-gray-900 dark:text-gray-100 flex flex-col font-mono selection:bg-blue-500 selection:text-white transition-colors">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-emerald-500 px-4 py-2 text-xs font-black text-gray-950 shadow-2xl shadow-emerald-500/30 animate-bounce">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-blue-600 px-4 py-2 font-mono text-xs font-bold text-white shadow-xl animate-bounce">
           {toast}
         </div>
       )}

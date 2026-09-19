@@ -90,7 +90,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
         await videoRef.current.play().catch(() => {});
       }
 
-      // Check Torch capability
       const track = stream.getVideoTracks()[0];
       if (track) {
         const capabilities: any = track.getCapabilities ? track.getCapabilities() : {};
@@ -103,9 +102,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
       }
 
       setIsScanning(true);
-      setStatus('Scanning all 1D/2D barcodes (UPC, EAN, Code128, QR)...');
+      setStatus('Scanning barcodes (UPC, EAN, Code128, QR)...');
 
-      // Native GPU BarcodeDetector API
       if ('BarcodeDetector' in window) {
         try {
           const supported = await (window as any).BarcodeDetector.getSupportedFormats().catch(() => [
@@ -177,9 +175,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
   };
 
   return (
-    <div className="mx-auto max-w-xl p-4">
-      {/* Scanner Viewport Box */}
-      <div className="relative overflow-hidden rounded-3xl bg-black shadow-2xl border border-gray-800 aspect-[3/4] max-h-[65vh]">
+    <div className="mx-auto max-w-xl p-4 sm:p-6 space-y-4 font-mono">
+      {/* Viewport Container */}
+      <div className="relative overflow-hidden rounded-xl bg-black shadow-lg border border-gray-200 dark:border-gray-800 aspect-[3/4] max-h-[60vh]">
         <video
           ref={videoRef}
           playsInline
@@ -189,33 +187,29 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
 
         {/* Framing Overlay & Laser Animation */}
         <div
-          className={`absolute left-[8%] right-[8%] top-[25%] h-[35%] rounded-2xl border-2 transition-all duration-200 pointer-events-none overflow-hidden ${
+          className={`absolute left-[8%] right-[8%] top-[25%] h-[35%] rounded-lg border-2 transition-all duration-200 pointer-events-none overflow-hidden ${
             scannedEffect
-              ? 'border-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.9)] bg-emerald-500/20'
-              : 'border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]'
+              ? 'border-blue-400 bg-blue-500/20'
+              : 'border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]'
           }`}
         >
-          {/* Laser sweeping beam */}
-          <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#34d399] animate-[laser_2s_ease-in-out_infinite_alternate]" />
+          <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_12px_#1d77ff] animate-[laser_2s_ease-in-out_infinite_alternate]" />
         </div>
 
-        {/* Center Target Hint */}
         <div className="absolute bottom-4 left-0 right-0 text-center px-4">
-          <p className="text-xs font-semibold text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            Align UPC/EAN barcode inside the frame
+          <p className="text-xs font-medium text-white/90 drop-shadow">
+            Align barcode inside frame
           </p>
         </div>
 
-        {/* Top Controls (Torch) */}
         {torchAvailable && (
           <button
             onClick={toggleTorch}
-            className={`absolute top-4 right-4 rounded-full p-2.5 backdrop-blur-md transition-colors ${
+            className={`absolute top-4 right-4 rounded-lg px-3 py-1.5 text-xs font-bold backdrop-blur-md transition ${
               torchOn
-                ? 'bg-amber-400 text-gray-950 shadow-lg shadow-amber-400/40'
+                ? 'bg-amber-400 text-slate-950'
                 : 'bg-black/60 text-white hover:bg-black/80'
             }`}
-            title="Toggle Flashlight"
           >
             {torchOn ? '🔦 Torch ON' : '💡 Torch'}
           </button>
@@ -223,23 +217,23 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
       </div>
 
       {/* Status Bar */}
-      <div className="mt-3 rounded-xl bg-gray-900 px-4 py-2.5 text-center text-xs font-medium text-gray-300 border border-gray-800">
+      <div className="rounded-lg bg-white dark:bg-slate-900 px-4 py-2.5 text-center text-xs font-mono text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800">
         {status}
       </div>
 
-      {/* Camera Action Buttons */}
-      <div className="mt-3 flex gap-2">
+      {/* Action Buttons */}
+      <div className="flex gap-2">
         {!isScanning ? (
           <button
             onClick={startCamera}
-            className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-bold text-gray-950 transition hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
+            className="flex-1 rounded-lg bg-blue-600 py-3 text-xs font-bold text-white transition hover:bg-blue-500 shadow-sm"
           >
             Restart Camera
           </button>
         ) : (
           <button
             onClick={stopCamera}
-            className="flex-1 rounded-xl bg-gray-800 py-3 text-sm font-bold text-gray-300 transition hover:bg-gray-700"
+            className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
           >
             Pause Camera
           </button>
@@ -251,16 +245,16 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
               stopCamera();
               onCancel();
             }}
-            className="rounded-xl border border-gray-800 bg-gray-900 px-5 py-3 text-sm font-semibold text-gray-400 hover:text-white"
+            className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             Back
           </button>
         )}
       </div>
 
-      {/* Manual UPC Entry Option */}
-      <form onSubmit={handleManualSubmit} className="mt-6 rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+      {/* Manual Entry */}
+      <form onSubmit={handleManualSubmit} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 space-y-2">
+        <label className="block text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
           Manual Barcode / UPC Entry
         </label>
         <div className="flex gap-2">
@@ -270,11 +264,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
             value={manualUpc}
             onChange={(e) => setManualUpc(e.target.value)}
             placeholder="e.g. 012345678905"
-            className="flex-1 rounded-xl border border-gray-800 bg-gray-950 px-3.5 py-2.5 text-sm text-white placeholder-gray-600 focus:border-emerald-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3.5 py-2 text-xs font-mono text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
           />
           <button
             type="submit"
-            className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-gray-950 transition hover:bg-emerald-400"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-blue-500"
           >
             Continue
           </button>

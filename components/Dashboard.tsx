@@ -26,60 +26,83 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const recent = products.slice(0, 4);
 
   return (
-    <div className="mx-auto max-w-xl p-4 space-y-5">
-      {/* Hero Scan Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-gray-800 bg-gradient-to-b from-gray-900 to-gray-950 p-6 shadow-2xl">
-        <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+    <section className="mx-auto max-w-4xl p-4 sm:p-6 space-y-6 font-mono">
+      {/* Hero Container */}
+      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <header className="max-w-xl space-y-2">
+            <span className="inline-block rounded bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+              Offline-First • Barcode &amp; Inventory Engine
+            </span>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+              Scanit Inventory Monitor
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+              Scan product UPC/EAN barcodes instantly. Photos and custom item attributes save locally in milliseconds and sync directly to your Google Sheet &amp; Drive.
+            </p>
+          </header>
 
-        <div className="relative z-10">
-          <span className="inline-block rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-400 mb-3">
-            Offline-First • Zero Latency
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Ready to Hunt Products?
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-gray-400 max-w-sm">
-            Instant barcode detection. Data &amp; photos save locally in milliseconds, then sync in background.
-          </p>
+          <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 min-w-[200px]">
+            <button
+              onClick={onStartScan}
+              className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 py-3 px-5 text-sm font-semibold text-white shadow-sm transition"
+              aria-label="Scan Product Barcode"
+            >
+              <span>📷</span>
+              <span>Scan Barcode</span>
+            </button>
+            <button
+              onClick={onOpenSettings}
+              className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-800/60 py-2.5 px-4 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+              aria-label="Configure Google Drive & Sheets"
+            >
+              <span>⚙️</span>
+              <span>Configure Google</span>
+            </button>
+          </div>
+        </div>
+      </article>
 
-          <button
-            onClick={onStartScan}
-            className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 py-4 text-center text-base font-black text-gray-950 shadow-xl shadow-emerald-500/25 hover:opacity-95 active:scale-[0.99] transition"
-          >
-            <span className="text-xl">📷</span>
-            <span>SCAN PRODUCT</span>
-          </button>
+      {/* Metrics Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span>Total Scanned</span>
+            <span>📦</span>
+          </div>
+          <span className="block text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
+          <p className="text-[11px] text-gray-400">Items stored in browser</p>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span>Synced to Google</span>
+            <span>✓</span>
+          </div>
+          <span className="block text-2xl font-bold text-blue-600 dark:text-blue-400">{synced}</span>
+          <p className="text-[11px] text-gray-400">Rows in Google Sheet</p>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span>Sync Queue</span>
+            <span>⚙</span>
+          </div>
+          <span className="block text-2xl font-bold text-amber-500">{pending}</span>
+          <p className="text-[11px] text-gray-400">Pending background upload</p>
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-3.5 text-center">
-          <span className="block text-xl font-extrabold text-white">{total}</span>
-          <span className="text-[11px] font-medium text-gray-400">Total Scanned</span>
-        </div>
-
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-3.5 text-center">
-          <span className="block text-xl font-extrabold text-emerald-400">{synced}</span>
-          <span className="text-[11px] font-medium text-gray-400">Synced to Drive</span>
-        </div>
-
-        <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-3.5 text-center">
-          <span className="block text-xl font-extrabold text-amber-400">{pending}</span>
-          <span className="text-[11px] font-medium text-gray-400">In Sync Queue</span>
-        </div>
-      </div>
-
-      {/* Recent Scans Section */}
-      <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Recent Scans
-          </h3>
+      {/* Recent Inventory Scans */}
+      <article className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+          <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Recent Scanned Products
+          </h2>
           {products.length > 0 && (
             <button
               onClick={onViewHistory}
-              className="text-xs font-semibold text-emerald-400 hover:underline"
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
             >
               View All ({products.length}) →
             </button>
@@ -87,52 +110,50 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {recent.length === 0 ? (
-          <p className="text-xs text-gray-500 py-4 text-center">
-            No products scanned yet. Tap &quot;Scan Product&quot; to begin!
-          </p>
+          <div className="py-8 text-center text-xs text-gray-400">
+            No products scanned yet. Click &quot;Scan Barcode&quot; to start!
+          </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {recent.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-950 p-2.5"
+                className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-950/50 p-3"
               >
                 <div className="flex items-center gap-3">
                   {p.photos && p.photos.length > 0 ? (
                     <img
                       src={p.photos[0].dataUrl}
                       alt={p.fields?.title || 'Product'}
-                      className="h-10 w-10 rounded-lg object-cover border border-gray-800"
+                      className="h-11 w-11 rounded border border-gray-200 dark:border-gray-800 object-cover"
                     />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 text-sm">
+                    <div className="flex h-11 w-11 items-center justify-center rounded bg-gray-200 dark:bg-slate-800 text-base">
                       📦
                     </div>
                   )}
-                  <div>
-                    <p className="text-xs font-bold text-white truncate max-w-[180px]">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[140px]">
                       {p.fields?.title || 'Untitled Product'}
                     </p>
-                    <p className="font-mono text-[10px] text-gray-400">{p.upc}</p>
+                    <p className="font-mono text-[10px] text-gray-500">{p.upc}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      p.syncStatus === 'synced'
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                    }`}
-                  >
-                    {p.syncStatus === 'synced' ? '✓ Synced' : 'Pending'}
-                  </span>
-                </div>
+                <span
+                  className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                    p.syncStatus === 'synced'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                  }`}
+                >
+                  {p.syncStatus === 'synced' ? '✓ Synced' : 'Pending'}
+                </span>
               </div>
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </article>
+    </section>
   );
 };

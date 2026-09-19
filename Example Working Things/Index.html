@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <script src="https://unpkg.com/@zxing/browser@0.2.1"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --bg:#f5f7fb; --card:#fff; --text:#111827; --muted:#667085; --line:#e5e7eb; --primary:#111827; --success:#067647; --danger:#b42318; }
+    body { margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
+    button,input,select,textarea { font:inherit; }
+    button { min-height:46px; border:0; border-radius:10px; padding:12px 16px; cursor:pointer; background:var(--primary); color:#fff; font-weight:700; }
+    button.secondary { background:#eef0f3; color:#111827; }
+    button.danger { background:#b42318; }
+    button.success { background:#067647; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .app { max-width:760px; margin:0 auto; padding:18px 14px 90px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font-size:28px; margin-bottom:4px; }
+    h2 { font-size:20px; margin-bottom:8px; }
+    p { color:var(--muted); line-height:1.5; }
+    .nav { display:flex; gap:8px; margin-bottom:14px; }
+    .nav button { flex:1; background:#e9edf3; color:#344054; }
+    .nav button.active { background:var(--primary); color:#fff; }
+    .screen { display:none; }
+    .screen.active { display:block; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-top:14px; box-shadow:0 2px 10px rgba(16,24,40,.04); }
+    .hero { padding:22px; }
+    .scan-main { width:100%; min-height:58px; font-size:17px; }
+    .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+    .status-item { border:1px solid var(--line); border-radius:12px; padding:12px; }
+    .status-item strong { display:block; font-size:13px; color:var(--muted); margin-bottom:5px; }
+    .ok { color:var(--success); font-weight:700; }
+    .bad { color:var(--danger); font-weight:700; }
+    .field { margin-top:14px; }
+    label { display:block; font-weight:700; margin-bottom:7px; }
+    .required { color:var(--danger); }
+    input,select,textarea { width:100%; border:1px solid #d0d5dd; border-radius:10px; padding:12px; background:#fff; color:#111827; }
+    textarea { min-height:100px; resize:vertical; }
+    input:focus,select:focus,textarea:focus { outline:2px solid #c7d2fe; border-color:#667eea; }
+    .error { color:var(--danger); font-size:13px; margin-top:6px; min-height:0; }
+    .actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }
+    .actions button { flex:1; min-width:140px; }
+    .scanner-box { position:relative; overflow:hidden; border-radius:16px; background:#000; aspect-ratio:3/4; max-height:70vh; }
+    #scannerVideo { width:100%; height:100%; object-fit:cover; display:block; }
+    #scannerBoxContainer { width:100%; height:100%; }
+    .scan-frame { position:absolute; left:10%; right:10%; top:28%; height:32%; border:3px solid rgba(255,255,255,.9); border-radius:14px; box-shadow:0 0 0 9999px rgba(0,0,0,.35); pointer-events:none; transition:border-color 0.15s, box-shadow 0.15s; overflow:hidden; }
+    .scan-frame.detected { border-color:#10b981 !important; box-shadow:0 0 0 9999px rgba(0,0,0,.35), 0 0 30px #10b981 !important; }
+    .scan-laser { position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent, #ef4444, #f87171, #ef4444, transparent); box-shadow:0 0 8px #ef4444, 0 0 15px #ef4444; animation:laserSweep 2s ease-in-out infinite alternate; top:0; }
+    @keyframes laserSweep { 0% { top: 5%; } 100% { top: 92%; } }
+    .scan-tip { position:absolute; left:0; right:0; bottom:14px; text-align:center; color:#fff; font-weight:700; text-shadow:0 1px 3px #000; padding:0 12px; }
+    .manual-row { display:flex; gap:8px; }
+    .manual-row input { flex:1; }
+    .photo-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:12px; }
+    .photo-card { border:1px solid var(--line); border-radius:12px; padding:8px; background:#fafafa; }
+    .photo-card img { width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px; display:block; }
+    .photo-card button { width:100%; margin-top:7px; min-height:40px; }
+    .photo-add { display:flex; gap:8px; margin-top:10px; }
+    .photo-add label { flex:1; margin:0; }
+    .photo-add button { flex:1; }
+    .hidden-input { display:none; }
+    .notice { padding:12px; border-radius:10px; background:#f2f4f7; color:#475467; margin-top:12px; }
+    .success-box { border:1px solid #abefc6; background:#ecfdf3; color:#067647; border-radius:14px; padding:16px; }
+    .field-row { display:grid; grid-template-columns:1fr 150px 110px; gap:10px; align-items:end; padding:12px; border:1px solid #eaecf0; border-radius:12px; margin-top:10px; }
+    .checkbox-row { display:flex; align-items:center; gap:8px; margin:0; min-height:46px; }
+    .checkbox-row input { width:auto; }
+    .empty { color:var(--muted); padding:10px 0; }
+    .muted-small { color:var(--muted); font-size:12px; }
+    @media(max-width:650px) {
+      .app { padding-left:10px; padding-right:10px; }
+      .status-grid { grid-template-columns:1fr; }
+      .field-row { grid-template-columns:1fr; }
+      .actions { flex-direction:column; }
+      .actions button { width:100%; }
+      .manual-row { flex-direction:column; }
+      .photo-grid { grid-template-columns:repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <h1>Product Hunting</h1>
+      <p style="margin-bottom:0">Fast product capture and inventory recording.</p>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button id="navDashboard" class="active" onclick="showScreen('dashboard')">Dashboard</button>
+    <button id="navScan" onclick="openScannerScreen()">Scan</button>
+    <button id="navSettings" onclick="showScreen('settings')">Settings</button>
+  </div>
+
+  <section id="dashboard" class="screen active">
+    <div class="card hero">
+      <h2>Scan a Product</h2>
+      <p>Use your phone camera to capture UPC/EAN, then enter the product details and photos.</p>
+      <button class="scan-main" onclick="openScannerScreen()">SCAN PRODUCT</button>
+      <div class="status-grid">
+        <div class="status-item"><strong>Google Sheet</strong><span id="dashboardSheetStatus">Checking...</span></div>
+        <div class="status-item"><strong>Google Drive</strong><span id="dashboardDriveStatus">Checking...</span></div>
+      </div>
+    </div>
+    <div id="dashboardSuccess" class="success-box" style="display:none;margin-top:14px"></div>
+  </section>
+
+  <section id="scanner" class="screen">
+    <div class="card">
+      <h2>Scan Barcode</h2>
+      <p>Supports all 1D &amp; 2D barcodes (UPC-A, UPC-E, EAN-13, EAN-8, Code-128, Code-39, QR).</p>
+      <div class="scanner-box" id="scannerBoxContainer">
+        <video id="scannerVideo" playsinline muted></video>
+        <div class="scan-frame"><div class="scan-laser"></div></div>
+        <div class="scan-tip">Align barcode inside frame</div>
+      </div>
+      <div id="scannerStatus" class="notice">Camera is stopped.</div>
+      <div class="actions">
+        <button id="torchBtn" class="secondary" style="display:none" onclick="toggleTorch()">FLASHLIGHT ON</button>
+        <button onclick="startScanner()">START SCANNER</button>
+        <button class="secondary" onclick="stopScanner();showScreen('dashboard')">STOP / BACK</button>
+      </div>
+      <div class="field">
+        <label>Manual UPC entry</label>
+        <div class="manual-row">
+          <input id="manualUpc" type="text" inputmode="numeric" autocomplete="off" placeholder="Enter UPC/EAN manually">
+          <button onclick="useManualUpc()">CONTINUE</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="product" class="screen">
+    <div class="card">
+      <h2>Product Entry</h2>
+      <p>Complete the required fields before saving.</p>
+      <div id="productForm"></div>
+      <div class="field">
+        <label>UPC <span class="required">*</span></label>
+        <input id="productUpc" type="text" inputmode="numeric" autocomplete="off" placeholder="UPC / EAN">
+        <div id="upcError" class="error"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Photos</h2>
+      <p>Add up to 5 photos. Photos stay in this page until the product is saved.</p>
+      <div id="photoGrid" class="photo-grid"></div>
+      <div class="photo-add">
+        <label><input id="cameraPhotoInput" class="hidden-input" type="file" accept="image/*" capture="environment" onchange="handlePhotoFiles(this.files)"><button type="button" onclick="document.getElementById('cameraPhotoInput').click()">TAKE PHOTO</button></label>
+        <label><input id="galleryPhotoInput" class="hidden-input" type="file" accept="image/*" multiple onchange="handlePhotoFiles(this.files)"><button type="button" class="secondary" onclick="document.getElementById('galleryPhotoInput').click()">GALLERY</button></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="saveStatus" class="notice" style="display:none"></div>
+      <div class="actions">
+        <button id="saveButton" class="success" onclick="saveCurrentProduct(false)">SAVE PRODUCT</button>
+        <button id="saveNextButton" onclick="saveCurrentProduct(true)">SAVE &amp; SCAN NEXT</button>
+      </div>
+      <button class="secondary" style="width:100%;margin-top:9px" onclick="showScreen('dashboard')">CANCEL / DASHBOARD</button>
+    </div>
+  </section>
+
+  <section id="saved" class="screen">
+    <div class="card">
+      <div class="success-box">
+        <h2>Product Saved</h2>
+        <div id="savedDetails"></div>
+      </div>
+      <div class="actions">
+        <button onclick="openScannerScreen()">SCAN NEXT PRODUCT</button>
+        <button class="secondary" onclick="showScreen('dashboard')">DASHBOARD</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="settings" class="screen">
+    <div class="card">
+      <h2>Google Sheet</h2>
+      <div id="sheetSetupArea">
+        <p>Connect an existing Google Sheet or create a new one.</p>
+        <div class="field"><label>Existing Google Sheet URL or ID</label><input id="sheetUrl" type="text" placeholder="Paste Google Sheet URL"></div>
+        <button onclick="connectExistingSheet()">CONNECT EXISTING SHEET</button>
+        <div class="field"><label>Create New Google Sheet</label><input id="newSheetName" type="text" placeholder="Product Hunting Database"></div>
+        <button onclick="createNewSheet()">CREATE NEW SHEET</button>
+      </div>
+      <div id="sheetConnectedArea" style="display:none">
+        <div class="notice"><strong id="sheetName"></strong><div class="muted-small" id="sheetUrlDisplay"></div></div>
+        <div class="actions"><button class="secondary" onclick="openConnectedSheet()">OPEN SHEET</button><button class="danger" onclick="disconnectSheet()">DISCONNECT</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Google Drive</h2>
+      <div id="driveSetupArea">
+        <p>Choose where product photos will be stored.</p>
+        <div class="field"><label>Existing Google Drive Folder URL or ID</label><input id="driveFolderUrl" type="text" placeholder="Paste Google Drive folder URL"></div>
+        <button onclick="connectExistingDriveFolder()">USE EXISTING FOLDER</button>
+        <div class="field"><label>Create New Google Drive Folder</label><input id="newDriveFolderName" type="text" placeholder="Product Hunting"></div>
+        <button onclick="createNewDriveFolder()">CREATE NEW FOLDER</button>
+      </div>
+      <div id="driveConnectedArea" style="display:none">
+        <div class="notice"><strong id="driveFolderName"></strong><div class="muted-small" id="driveFolderUrlDisplay"></div></div>
+        <div class="actions"><button class="secondary" onclick="openConnectedDriveFolder()">OPEN FOLDER</button><button class="danger" onclick="disconnectDrive()">DISCONNECT</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Product Fields</h2>
+      <p>Title, COG, and Quantity are fixed. Custom fields can be added or removed; historical Sheet columns are never deleted.</p>
+      <div id="fieldsContainer"></div>
+      <div class="actions"><button onclick="addTextField()">+ ADD FIELD</button><button onclick="saveFields()">SAVE FIELDS</button></div>
+    </div>
+  </section>
+
+  <div id="globalStatus" class="notice" style="display:none"></div>
+</div>
+
+<script>
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwHOvqDrtTsaTZawFdKeCs4tANzCmOnqmpBaYKXFa-mZOfsASvXHBVCIJzB-QULhOdaaA/exec';
+
+  function runBackend(action, payload) {
+    if (typeof google !== 'undefined' && google && google.script && google.script.run) {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)[action](payload);
+      });
+    } else {
+      return fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, payload: payload })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (!res.success) throw new Error(res.error || 'Server error');
+        return res.data;
+      });
+    }
+  }
+
+  let productFields = [];
+  let selectedPhotos = [];
+  let scannerControls = null;
+  let scannerRunning = false;
+  let saveInProgress = false;
+  let setupState = { spreadsheet:false, drive:false };
+  let connectedSheetUrl = '';
+  let connectedDriveFolderUrl = '';
+
+  document.addEventListener('DOMContentLoaded', loadSetup);
+
+  function $(id) { return document.getElementById(id); }
+
+  function showScreen(name) {
+    if (name !== 'scanner') stopScanner();
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    const target = $(name);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
+    const nav = name === 'dashboard' ? $('navDashboard') : (name === 'settings' ? $('navSettings') : $('navScan'));
+    if (nav) nav.classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function openScannerScreen() {
+    showScreen('scanner');
+    $('manualUpc').value = '';
+    setTimeout(startScanner, 120);
+  }
+
+  function loadSetup() {
+    showGlobalStatus('Loading configuration...');
+    runBackend('getAppSetup')
+      .then(function(result) {
+        hideGlobalStatus();
+        setupState.spreadsheet = !!(result.spreadsheet && result.spreadsheet.connected);
+        setupState.drive = !!(result.drive && result.drive.connected);
+        if (setupState.spreadsheet) { showConnectedSheet(result.spreadsheet); loadProductFields(); }
+        else { showSheetSetup(); productFields = []; renderFields(); }
+        if (setupState.drive) showConnectedDrive(result.drive);
+        else showDriveSetup();
+        updateDashboardStatus();
+      })
+      .catch(function(error) { showGlobalStatus(userError(error,'Could not load configuration.')); });
+  }
+
+  function updateDashboardStatus() {
+    $('dashboardSheetStatus').textContent = setupState.spreadsheet ? 'Connected' : 'Not connected';
+    $('dashboardSheetStatus').className = setupState.spreadsheet ? 'ok' : 'bad';
+    $('dashboardDriveStatus').textContent = setupState.drive ? 'Connected' : 'Not connected';
+    $('dashboardDriveStatus').className = setupState.drive ? 'ok' : 'bad';
+  }
+
+  function requireConnectionsForScan() {
+    if (!setupState.spreadsheet) { showScreen('settings'); showGlobalStatus('Google Sheet is not connected. Please connect a Sheet in Settings.'); return false; }
+    if (!setupState.drive) { showScreen('settings'); showGlobalStatus('Google Drive is not connected. Please connect a Drive folder in Settings.'); return false; }
+    if (!productFields.length) { showGlobalStatus('Product fields are not loaded yet.'); return false; }
+    return true;
+  }
+
+  let nativeDetectorInterval = null;
+  let html5Scanner = null;
+  let isProcessingScan = false;
+  let currentTrack = null;
+  let torchOn = false;
+
+  function playScanBeep() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.14);
+    } catch (e) {}
+  }
+
+  function triggerHapticFeedback() {
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate([60, 40, 60]); } catch (e) {}
+    }
+  }
+
+  function setupTorchButton(track) {
+    currentTrack = track;
+    const btn = $('torchBtn');
+    if (track && track.getCapabilities && track.getCapabilities().torch) {
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function toggleTorch() {
+    if (!currentTrack) return;
+    torchOn = !torchOn;
+    currentTrack.applyConstraints({ advanced: [{ torch: torchOn }] }).then(() => {
+      $('torchBtn').textContent = torchOn ? 'FLASHLIGHT OFF' : 'FLASHLIGHT ON';
+    }).catch(() => {});
+  }
+
+  function onBarcodeDetected(text, format) {
+    if (!text || isProcessingScan) return;
+    const cleanText = String(text).trim();
+    if (cleanText.length < 3) return;
+
+    isProcessingScan = true;
+    playScanBeep();
+    triggerHapticFeedback();
+
+    const frame = document.querySelector('.scan-frame');
+    if (frame) frame.classList.add('detected');
+
+    const displayFormat = format ? ` [${String(format).toUpperCase()}]` : '';
+    setScannerStatus('✓ Scanned: ' + cleanText + displayFormat);
+
+    setTimeout(() => {
+      if (frame) frame.classList.remove('detected');
+      stopScanner();
+      beginProductEntry(cleanText);
+      isProcessingScan = false;
+    }, 120);
+  }
+
+  async function startScanner() {
+    if (scannerRunning) return;
+    isProcessingScan = false;
+    torchOn = false;
+    if ($('torchBtn')) $('torchBtn').style.display = 'none';
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setScannerStatus('Camera is not available in this browser. You can enter the UPC manually.');
+      return;
+    }
+
+    scannerRunning = true;
+    setScannerStatus('Starting HD camera...');
+    const video = $('scannerVideo');
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { min: 1280, ideal: 1920, max: 3840 },
+          height: { min: 720, ideal: 1080, max: 2160 },
+          focusMode: { ideal: 'continuous' }
+        }
+      });
+    } catch (e1) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (e2) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (e3) {
+          scannerRunning = false;
+          setScannerStatus('Camera access denied or unavailable. Please enter UPC manually.');
+          return;
+        }
+      }
+    }
+
+    video.srcObject = stream;
+    try { await video.play(); } catch (e) {}
+
+    const tracks = stream.getVideoTracks();
+    if (tracks && tracks.length) {
+      currentTrack = tracks[0];
+      setupTorchButton(currentTrack);
+      if (currentTrack.applyConstraints) {
+        currentTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+      }
+    }
+
+    setScannerStatus('Scanning 1D/2D Barcodes (UPC, EAN, Code128, QR)...');
+
+    // ENGINE 1: Native BarcodeDetector API (GPU Accelerated - Android / iOS 17+)
+    if ('BarcodeDetector' in window) {
+      try {
+        const supportedFormats = await BarcodeDetector.getSupportedFormats().catch(() => [
+          'aztec', 'code_128', 'code_39', 'code_93', 'codabar', 'data_matrix',
+          'ean_13', 'ean_8', 'itf', 'pdf417', 'qr_code', 'upc_a', 'upc_e'
+        ]);
+        const detector = new BarcodeDetector({ formats: supportedFormats });
+
+        nativeDetectorInterval = setInterval(async () => {
+          if (!scannerRunning || video.readyState !== 4 || isProcessingScan) return;
+          try {
+            const barcodes = await detector.detect(video);
+            if (barcodes && barcodes.length > 0) {
+              const b = barcodes[0];
+              if (b && b.rawValue) onBarcodeDetected(b.rawValue, b.format);
+            }
+          } catch (err) {}
+        }, 80);
+        return;
+      } catch (err) {
+        console.warn('Native BarcodeDetector fallback to JS engines', err);
+      }
+    }
+
+    // ENGINE 2: Html5Qrcode Engine (Fallback for older browsers)
+    if (window.Html5Qrcode) {
+      try {
+        if (!html5Scanner) html5Scanner = new Html5Qrcode("scannerBoxContainer");
+        html5Scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 15,
+            qrbox: { width: 280, height: 180 },
+            aspectRatio: 1.333333
+          },
+          (decodedText, decodedResult) => {
+            if (decodedText && !isProcessingScan) {
+              const format = decodedResult && decodedResult.result && decodedResult.result.format ? decodedResult.result.format.formatName : '';
+              onBarcodeDetected(decodedText, format);
+            }
+          },
+          () => {}
+        ).catch(() => {
+          startZXingFallback(video);
+        });
+        return;
+      } catch (e) {}
+    }
+
+    // ENGINE 3: ZXing MultiFormatReader Fallback
+    startZXingFallback(video);
+  }
+
+  async function startZXingFallback(video) {
+    if (window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader) {
+      try {
+        const reader = new ZXingBrowser.BrowserMultiFormatReader();
+        const callback = function(result, error, controls) {
+          if (result && !isProcessingScan) {
+            const text = result.getText ? result.getText() : String(result.text || '');
+            if (text) onBarcodeDetected(text, 'barcode');
+          }
+        };
+        scannerControls = await reader.decodeFromVideoElement(video, callback);
+      } catch (err) {
+        setScannerStatus('Scanner active. Point camera at barcode.');
+      }
+    } else {
+      setScannerStatus('Scanner active. Point camera at barcode.');
+    }
+  }
+
+  function stopScanner() {
+    if (nativeDetectorInterval) {
+      clearInterval(nativeDetectorInterval);
+      nativeDetectorInterval = null;
+    }
+    if (html5Scanner) {
+      try { html5Scanner.stop().catch(() => {}); } catch (e) {}
+    }
+    if (scannerControls) {
+      try { scannerControls.stop(); } catch (e) {}
+      scannerControls = null;
+    }
+    const video = $('scannerVideo');
+    if (video && video.srcObject) {
+      try { video.srcObject.getTracks().forEach(track => track.stop()); } catch (e) {}
+      video.srcObject = null;
+    }
+    currentTrack = null;
+    torchOn = false;
+    if ($('torchBtn')) $('torchBtn').style.display = 'none';
+    scannerRunning = false;
+  }
+
+  function setScannerStatus(message) { $('scannerStatus').textContent = message; }
+
+  function useManualUpc() {
+    const value = $('manualUpc').value.trim();
+    if (!value) { setScannerStatus('Please enter a UPC/EAN.'); return; }
+    stopScanner();
+    beginProductEntry(value);
+  }
+
+  function beginProductEntry(upc) {
+    if (!requireConnectionsForScan()) return;
+    $('productUpc').value = String(upc);
+    clearProductErrors();
+    renderProductForm();
+    renderPhotos();
+    $('saveStatus').style.display = 'none';
+    showScreen('product');
+  }
+
+  function renderProductForm() {
+    const container = $('productForm');
+    container.innerHTML = '';
+    productFields.forEach(field => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'field';
+      const label = document.createElement('label');
+      label.textContent = field.name;
+      if (field.required) {
+        const star = document.createElement('span'); star.className='required'; star.textContent=' *'; label.appendChild(star);
+      }
+      wrapper.appendChild(label);
+      let input;
+      if (field.type === 'longtext') input = document.createElement('textarea');
+      else if (field.type === 'dropdown') {
+        input = document.createElement('select');
+        const blank = document.createElement('option'); blank.value=''; blank.textContent='Select...'; input.appendChild(blank);
+        (field.options || []).forEach(optionValue => { const opt=document.createElement('option'); opt.value=String(optionValue); opt.textContent=String(optionValue); input.appendChild(opt); });
+      } else if (field.type === 'checkbox') {
+        const row = document.createElement('label'); row.className='checkbox-row';
+        input = document.createElement('input'); input.type='checkbox'; input.id='productField_'+field.id; input.dataset.fieldId=field.id;
+        row.appendChild(input); row.appendChild(document.createTextNode('Yes'));
+        wrapper.appendChild(row);
+        const err=document.createElement('div'); err.className='error'; err.id='error_'+field.id; wrapper.appendChild(err);
+        container.appendChild(wrapper); return;
+      } else {
+        input = document.createElement('input'); input.type = field.type === 'number' ? 'number' : (field.type === 'date' ? 'date' : 'text');
+        if (field.type === 'number') input.step='any';
+      }
+      input.id='productField_'+field.id; input.dataset.fieldId=field.id;
+      wrapper.appendChild(input);
+      const err=document.createElement('div'); err.className='error'; err.id='error_'+field.id; wrapper.appendChild(err);
+      container.appendChild(wrapper);
+    });
+  }
+
+  function collectProductValues() {
+    const values = {};
+    productFields.forEach(field => {
+      const input = $('productField_'+field.id);
+      if (!input) return;
+      values[field.id] = field.type === 'checkbox' ? input.checked : input.value;
+    });
+    return values;
+  }
+
+  function validateProductForm() {
+    clearProductErrors();
+    let valid = true;
+    const upc = $('productUpc').value.trim();
+    if (!upc) { $('upcError').textContent='UPC is required.'; valid=false; }
+    productFields.forEach(field => {
+      const input=$('productField_'+field.id); if (!input) return;
+      const value=field.type==='checkbox' ? input.checked : input.value;
+      if (field.required && (field.type==='checkbox' ? !value : String(value).trim()==='')) {
+        $('error_'+field.id).textContent=field.name+' is required.'; valid=false;
+      }
+      if (field.type==='number' && String(value).trim()!=='' && !Number.isFinite(Number(value))) {
+        $('error_'+field.id).textContent=field.name+' must be a valid number.'; valid=false;
+      }
+    });
+    if (!valid) {
+      const first = document.querySelector('.error:not(:empty)'); if (first) first.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    return valid;
+  }
+
+  function clearProductErrors() {
+    $('upcError').textContent='';
+    document.querySelectorAll('.error').forEach(el=>{ if(el.id!=='upcError') el.textContent=''; });
+  }
+
+  function handlePhotoFiles(fileList) {
+    const files=Array.from(fileList || []);
+    if (!files.length) return;
+    if (selectedPhotos.length + files.length > 5) {
+      showSaveStatus('Maximum 5 photos are allowed.', true);
+      $('cameraPhotoInput').value=''; $('galleryPhotoInput').value='';
+      return;
+    }
+    let remaining=files.length;
+    files.forEach(file => {
+      compressImage(file, 1600, 0.82).then(photo => {
+        selectedPhotos.push(photo); remaining--; renderPhotos();
+      }).catch(()=>{ remaining--; if(!remaining) showSaveStatus('One or more photos could not be prepared.',true); });
+    });
+    $('cameraPhotoInput').value=''; $('galleryPhotoInput').value='';
+  }
+
+  function compressImage(file, maxDimension, quality) {
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onerror=reject;
+      reader.onload=function(){
+        const img=new Image();
+        img.onload=function(){
+          const scale=Math.min(1,maxDimension/Math.max(img.width,img.height));
+          const canvas=document.createElement('canvas');
+          canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale));
+          const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,canvas.width,canvas.height);
+          canvas.toBlob(blob=>{
+            if(!blob){reject(new Error('Could not compress image.'));return;}
+            const fr=new FileReader(); fr.onload=()=>resolve({dataUrl:fr.result,mimeType:'image/jpeg',name:file.name||'product.jpg'}); fr.onerror=reject; fr.readAsDataURL(blob);
+          },'image/jpeg',quality);
+        }; img.onerror=reject; img.src=reader.result;
+      }; reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPhotos() {
+    const grid=$('photoGrid'); grid.innerHTML='';
+    if (!selectedPhotos.length) { grid.innerHTML='<div class="empty">No photos selected yet.</div>'; return; }
+    selectedPhotos.forEach((photo,index)=>{
+      const card=document.createElement('div'); card.className='photo-card';
+      const img=document.createElement('img'); img.src=photo.dataUrl; img.alt='Product photo '+(index+1); card.appendChild(img);
+      const button=document.createElement('button'); button.className='danger'; button.textContent='REMOVE'; button.onclick=()=>{selectedPhotos.splice(index,1);renderPhotos();}; card.appendChild(button);
+      grid.appendChild(card);
+    });
+  }
+
+  function saveCurrentProduct(scanNext) {
+    if (saveInProgress) return;
+    if (!validateProductForm()) return;
+    if (!setupState.spreadsheet) { showSaveStatus('Google Sheet is not connected. Please connect a Sheet in Settings.',true); return; }
+    if (!setupState.drive) { showSaveStatus('Google Drive is not connected. Please connect a Drive folder in Settings.',true); return; }
+
+    saveInProgress=true; setSaveButtonsDisabled(true); showSaveStatus('Saving product...',false);
+    const payload={ upc:$('productUpc').value.trim(), fields:collectProductValues(), photos:selectedPhotos };
+    runBackend('saveProduct', payload)
+      .then(function(result){
+        saveInProgress=false; setSaveButtonsDisabled(false); showSaveStatus('Product saved successfully.',false);
+        $('savedDetails').textContent='Record ID: '+result.recordId;
+        $('dashboardSuccess').textContent='Product saved: '+result.recordId; $('dashboardSuccess').style.display='block';
+        if(scanNext){
+          selectedPhotos=[]; renderPhotos(); clearProductForm();
+          showScreen('scanner'); setTimeout(startScanner,120);
+        } else {
+          showScreen('saved');
+        }
+      })
+      .catch(function(error){
+        saveInProgress=false; setSaveButtonsDisabled(false); showSaveStatus(userError(error,'Product could not be saved. Your form and selected photos are still here; please retry.'),true);
+      });
+  }
+
+  function clearProductForm() {
+    $('productUpc').value=''; $('productForm').innerHTML=''; $('upcError').textContent='';
+    selectedPhotos=[]; renderPhotos();
+  }
+
+  function setSaveButtonsDisabled(disabled){ $('saveButton').disabled=disabled; $('saveNextButton').disabled=disabled; }
+  function showSaveStatus(message,error){ const el=$('saveStatus'); el.textContent=message; el.style.display='block'; el.style.background=error?'#fef3f2':'#f2f4f7'; el.style.color=error?'#b42318':'#475467'; }
+  function userError(error,fallback){ return (error && error.message) ? error.message : fallback; }
+  function showGlobalStatus(message){ $('globalStatus').textContent=message; $('globalStatus').style.display='block'; }
+  function hideGlobalStatus(){ $('globalStatus').style.display='none'; }
+
+  /* ---------------- SETTINGS: SHEET ---------------- */
+  function connectExistingSheet(){ const value=$('sheetUrl').value.trim(); if(!value){showGlobalStatus('Please paste a Google Sheet URL or ID.');return;} showGlobalStatus('Connecting Google Sheet...'); runBackend('connectSpreadsheet', value).then(r=>{showConnectedSheet(r);loadProductFields();setupState.spreadsheet=true;updateDashboardStatus();showGlobalStatus('Google Sheet connected successfully.');}).catch(e=>showGlobalStatus(userError(e,'Could not connect Google Sheet.'))); }
+  function createNewSheet(){ const name=$('newSheetName').value.trim()||'Product Hunting Database'; showGlobalStatus('Creating Google Sheet...'); runBackend('createNewSpreadsheet', name).then(r=>{showConnectedSheet(r);loadProductFields();setupState.spreadsheet=true;updateDashboardStatus();showGlobalStatus('Google Sheet created successfully.');}).catch(e=>showGlobalStatus(userError(e,'Could not create Google Sheet.'))); }
+  function disconnectSheet(){ if(!confirm('Disconnect this Google Sheet? Existing data will NOT be deleted.'))return; showGlobalStatus('Disconnecting Google Sheet...'); runBackend('disconnectSpreadsheet').then(()=>{showSheetSetup();setupState.spreadsheet=false;productFields=[];renderFields();updateDashboardStatus();showGlobalStatus('Google Sheet disconnected.');}).catch(e=>showGlobalStatus(userError(e,'Could not disconnect Google Sheet.'))); }
+  function showConnectedSheet(result){ $('sheetSetupArea').style.display='none';$('sheetConnectedArea').style.display='block';$('sheetName').textContent=result.spreadsheetName||'';$('sheetUrlDisplay').textContent=result.spreadsheetUrl||'';connectedSheetUrl=result.spreadsheetUrl||''; }
+  function showSheetSetup(){ $('sheetSetupArea').style.display='block';$('sheetConnectedArea').style.display='none'; }
+  function openConnectedSheet(){ if(connectedSheetUrl)window.open(connectedSheetUrl,'_blank'); }
+
+  /* ---------------- SETTINGS: DRIVE ---------------- */
+  function connectExistingDriveFolder(){ const value=$('driveFolderUrl').value.trim(); if(!value){showGlobalStatus('Please paste a Google Drive folder URL or ID.');return;} showGlobalStatus('Connecting Google Drive folder...'); runBackend('connectDriveFolder', value).then(r=>{showConnectedDrive(r);setupState.drive=true;updateDashboardStatus();showGlobalStatus('Google Drive folder connected successfully.');}).catch(e=>showGlobalStatus(userError(e,'Could not connect Google Drive folder.'))); }
+  function createNewDriveFolder(){ const name=$('newDriveFolderName').value.trim()||'Product Hunting'; showGlobalStatus('Creating Google Drive folder...'); runBackend('createNewDriveFolder', name).then(r=>{showConnectedDrive(r);setupState.drive=true;updateDashboardStatus();showGlobalStatus('Google Drive folder connected successfully.');}).catch(e=>showGlobalStatus(userError(e,'Could not create Google Drive folder.'))); }
+  function disconnectDrive(){ if(!confirm('Disconnect this Drive folder? Existing files will NOT be deleted.'))return; showGlobalStatus('Disconnecting Google Drive...'); runBackend('disconnectDriveFolder').then(()=>{showDriveSetup();setupState.drive=false;updateDashboardStatus();showGlobalStatus('Google Drive disconnected.');}).catch(e=>showGlobalStatus(userError(e,'Could not disconnect Google Drive.'))); }
+  function showConnectedDrive(result){ $('driveSetupArea').style.display='none';$('driveConnectedArea').style.display='block';$('driveFolderName').textContent=result.folderName||'';$('driveFolderUrlDisplay').textContent=result.folderUrl||'';connectedDriveFolderUrl=result.folderUrl||''; }
+  function showDriveSetup(){ $('driveSetupArea').style.display='block';$('driveConnectedArea').style.display='none'; }
+  function openConnectedDriveFolder(){ if(connectedDriveFolderUrl)window.open(connectedDriveFolderUrl,'_blank'); }
+
+  /* ---------------- SETTINGS: FIELDS ---------------- */
+  function loadProductFields(){ runBackend('getProductFields').then(fields=>{productFields=fields||[];renderFields();}).catch(e=>showGlobalStatus(userError(e,'Could not load product fields.'))); }
+  function renderFields(){
+    const container=$('fieldsContainer'); container.innerHTML='';
+    if(!productFields.length){container.innerHTML='<div class="empty">No fields configured.</div>';return;}
+    productFields.forEach((field,index)=>{
+      const row=document.createElement('div');row.className='field-row';
+      const nameWrap=document.createElement('div');const nameLabel=document.createElement('label');nameLabel.textContent=field.name+(field.system?' (Fixed)':'');const nameInput=document.createElement('input');nameInput.value=field.name;nameInput.disabled=!!field.system;nameWrap.append(nameLabel,nameInput);
+      const typeWrap=document.createElement('div');const typeLabel=document.createElement('label');typeLabel.textContent='Type';const typeSelect=document.createElement('select');[['text','Text'],['number','Number'],['dropdown','Dropdown'],['date','Date'],['checkbox','Checkbox'],['longtext','Long Text']].forEach(pair=>{const opt=document.createElement('option');opt.value=pair[0];opt.textContent=pair[1];opt.selected=field.type===pair[0];typeSelect.appendChild(opt);});typeSelect.disabled=!!field.system;typeWrap.append(typeLabel,typeSelect);
+      const action=document.createElement('div');const reqLabel=document.createElement('label');reqLabel.className='checkbox-row';const req=document.createElement('input');req.type='checkbox';req.checked=!!field.required;req.disabled=!!field.system;reqLabel.append(req,document.createTextNode('Required'));action.appendChild(reqLabel);
+      if(!field.system){const remove=document.createElement('button');remove.className='danger';remove.textContent='REMOVE';remove.onclick=()=>{productFields.splice(index,1);renderFields();};action.appendChild(remove);}
+      row.append(nameWrap,typeWrap,action); row.dataset.index=index; container.appendChild(row);
+    });
+  }
+  function addTextField(){ productFields.push({id:'field_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name:'New Field',type:'text',required:false,system:false,options:[]});renderFields(); }
+  function saveFields(){
+    const rows=Array.from(document.querySelectorAll('#fieldsContainer .field-row'));const fields=[];
+    rows.forEach((row,index)=>{const field=productFields[index];const inputs=row.querySelectorAll('input');const selects=row.querySelectorAll('select');const nameInput=inputs[0];const req=row.querySelector('input[type="checkbox"]');fields.push({id:field.id,name:field.system?field.name:nameInput.value.trim(),type:field.system?field.type:selects[0].value,required:field.system?field.required:req.checked,system:!!field.system,options:field.options||[]});});
+    const names=fields.map(f=>f.name.toLowerCase()); if(names.some((n,i)=>names.indexOf(n)!==i)){showGlobalStatus('Field names must be unique.');return;} if(fields.some(f=>!f.name.trim())){showGlobalStatus('Every field must have a name.');return;}
+    showGlobalStatus('Saving product fields...');runBackend('saveProductFields', fields).then(saved=>{productFields=saved||[];renderFields();showGlobalStatus('Product fields saved successfully.');}).catch(e=>showGlobalStatus(userError(e,'Could not save product fields.')));
+  }
+</script>
+</body>
+</html>

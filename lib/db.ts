@@ -64,9 +64,9 @@ function openDatabase(): Promise<IDBDatabase> {
 }
 
 export const DEFAULT_PRODUCT_FIELDS: ProductField[] = [
-  { id: 'title', name: 'Title', type: 'text', required: true, system: true },
-  { id: 'cog', name: 'COG', type: 'number', required: true, system: true },
-  { id: 'quantity', name: 'Quantity', type: 'number', required: true, system: true },
+  { id: 'title', name: 'Title', type: 'text', required: false, system: false },
+  { id: 'cog', name: 'COG', type: 'number', required: false, system: false },
+  { id: 'quantity', name: 'Quantity', type: 'number', required: false, system: false },
 ];
 
 /* ================= CONFIG METHODS ================= */
