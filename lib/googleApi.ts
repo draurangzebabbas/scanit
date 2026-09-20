@@ -4,9 +4,6 @@ const SYSTEM_COLUMNS = [
   'Record ID',
   'Timestamp',
   'UPC',
-  'Title',
-  'COG',
-  'Quantity',
   'Drive Folder',
   'Photo 1',
   'Photo 2',
@@ -32,7 +29,8 @@ export function extractIdFromUrlOrId(input: string): string {
 
 export async function createSpreadsheet(
   accessToken: string,
-  name: string = 'Scanit Database'
+  name: string = 'Scanit Database',
+  customFields: ProductField[] = []
 ): Promise<{ spreadsheetId: string; spreadsheetUrl: string; spreadsheetName: string }> {
   const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
     method: 'POST',
@@ -58,7 +56,8 @@ export async function createSpreadsheet(
   const spreadsheetId = data.spreadsheetId;
   const spreadsheetUrl = data.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
-  await setupSpreadsheetStructure(accessToken, spreadsheetId);
+  // Pass custom fields so the header row is correct from the start
+  await setupSpreadsheetStructure(accessToken, spreadsheetId, customFields);
 
   return {
     spreadsheetId,
@@ -253,9 +252,6 @@ export async function appendProductRowToSheet(
     'Record ID': record.id,
     Timestamp: record.timestamp,
     UPC: record.upc,
-    Title: record.fields.title || '',
-    COG: record.fields.cog !== undefined ? record.fields.cog : '',
-    Quantity: record.fields.quantity !== undefined ? record.fields.quantity : '',
     'Drive Folder': driveFolderUrl || '',
     'Photo 1': photoUrls[0] || '',
     'Photo 2': photoUrls[1] || '',
@@ -264,13 +260,13 @@ export async function appendProductRowToSheet(
     'Photo 5': photoUrls[4] || '',
   };
 
+  // Merge in all custom fields from the record
   Object.keys(record.fields).forEach((key) => {
     dataMap[key] = record.fields[key];
   });
 
   const rowValues = headers.map((header) => {
     if (dataMap[header] !== undefined) return dataMap[header];
-    if (record.fields[header] !== undefined) return record.fields[header];
     return '';
   });
 

@@ -143,7 +143,7 @@ export const Settings: React.FC = () => {
     const nameToUse = newSheetName.trim() || 'Scanit Database';
     setIsProcessingSheet(true);
     try {
-      const res = await createSpreadsheet(session.accessToken, nameToUse);
+      const res = await createSpreadsheet(session.accessToken, nameToUse, fields);
       const updatedConfig = {
         ...config,
         spreadsheetId: res.spreadsheetId,
@@ -181,6 +181,12 @@ export const Settings: React.FC = () => {
       };
       await saveGoogleConfig(updatedConfig);
       setConfig(updatedConfig);
+      // Sync current custom fields as headers into the connected sheet
+      if (fields.length > 0) {
+        saveProductFieldsToSheet(session.accessToken, info.spreadsheetId, fields).catch((err) =>
+          console.error('Header sync on connect failed:', err)
+        );
+      }
       showMsg(`✓ Connected to Sheet: ${info.spreadsheetName}`);
     } catch (err: any) {
       showMsg(`Could not connect sheet: ${err?.message || 'Error'}`, true);
