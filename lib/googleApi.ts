@@ -367,6 +367,82 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([u8arr], { type: mime });
 }
 
+/**
+ * Finds a folder by name inside a parent, or creates it if it doesn't exist.
+ * Returns the subfolder's ID.
+ */
+export async function getOrCreateSubfolder(
+  accessToken: string,
+  parentFolderId: string,
+  subfolderName: string
+): Promise<string> {
+  const cleanParent = extractIdFromUrlOrId(parentFolderId);
+  // Search for an existing folder with this name inside the parent
+  const query = encodeURIComponent(
+    `name="${subfolderName}" and mimeType="application/vnd.google-apps.folder" and "${cleanParent}" in parents and trashed=false`
+  );
+  const searchRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)&pageSize=1`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (searchRes.ok) {
+    const searchData = await searchRes.json();
+    if (searchData.files && searchData.files.length > 0) {
+      return searchData.files[0].id as string;
+    }
+  }
+
+  // Not found — create it
+  const createRes = await fetch(
+    'https://www.googleapis.com/drive/v3/files?fields=id',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: subfolderName,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [cleanParent],
+      }),
+    }
+  );
+
+  if (!createRes.ok) {
+    const err = await createRes.json();
+    throw new Error(err.error?.message || `Failed to create subfolder "${subfolderName}".`);
+  }
+
+  const created = await createRes.json();
+  return created.id as string;
+}
+
+/**
+ * Given a root Drive folder ID and a Date, ensures the nested path:
+ *   Root → "2026" → "September" → "Sep 20"
+ * exists (creating any missing segments) and returns the leaf folder ID.
+ */
+export async function getOrCreateDateFolderPath(
+  accessToken: string,
+  rootFolderId: string,
+  date: Date = new Date()
+): Promise<string> {
+  const year = date.getFullYear().toString(); // e.g. "2026"
+  const monthLong = date.toLocaleString('en-US', { month: 'long' }); // e.g. "September"
+  const monthShort = date.toLocaleString('en-US', { month: 'short' }); // e.g. "Sep"
+  const day = date.getDate().toString().padStart(2, '0'); // e.g. "20"
+  const dayLabel = `${monthShort} ${day}`; // e.g. "Sep 20"
+
+  const yearId = await getOrCreateSubfolder(accessToken, rootFolderId, year);
+  const monthId = await getOrCreateSubfolder(accessToken, yearId, monthLong);
+  const dayId = await getOrCreateSubfolder(accessToken, monthId, dayLabel);
+
+  return dayId;
+}
+
+
 export async function uploadPhotoToDriveFolder(
   accessToken: string,
   folderId: string,

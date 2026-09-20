@@ -8,6 +8,7 @@ import { getStoredAuthSession } from './googleAuth';
 import {
   appendProductRowToSheet,
   uploadPhotoToDriveFolder,
+  getOrCreateDateFolderPath,
   extractIdFromUrlOrId,
 } from './googleApi';
 
@@ -66,14 +67,22 @@ export async function syncSingleProduct(product: ProductRecord): Promise<boolean
     const photoUrls: string[] = [];
     const driveFolderUrl = config.driveFolderUrl || `https://drive.google.com/drive/folders/${driveFolderId}`;
 
-    // 1. Upload photos to Google Drive
+    // 1. Upload photos to Google Drive (inside Year → Month → Day subfolders)
     if (product.photos && product.photos.length > 0) {
+      // Resolve the dated subfolder once for all photos in this product
+      const scanDate = product.timestamp ? new Date(product.timestamp) : new Date();
+      const dayFolderId = await getOrCreateDateFolderPath(
+        session.accessToken,
+        driveFolderId,
+        scanDate
+      );
+
       for (let i = 0; i < product.photos.length; i++) {
         const photo = product.photos[i];
         const fileName = `${product.upc || 'PRODUCT'}_photo_${i + 1}_${Date.now()}.jpg`;
         const photoUrl = await uploadPhotoToDriveFolder(
           session.accessToken,
-          driveFolderId,
+          dayFolderId,
           photo,
           fileName
         );
