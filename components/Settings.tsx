@@ -69,6 +69,16 @@ export const Settings: React.FC = () => {
   const [fields, setFields] = useState<ProductField[]>([]);
   const [savedFieldsSnapshot, setSavedFieldsSnapshot] = useState<string>('[]');
 
+  // Modal Popup state for Adding / Editing Fields
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
+  const [modalName, setModalName] = useState<string>('');
+  const [modalType, setModalType] = useState<ProductField['type']>('text');
+  const [modalRequired, setModalRequired] = useState<boolean>(false);
+  const [modalOptions, setModalOptions] = useState<string[]>([]);
+  const [modalOptionInput, setModalOptionInput] = useState<string>('');
+  const [modalError, setModalError] = useState<string | null>(null);
+
   // Custom naming states for creating Sheet and Drive Folder (Scanit defaults)
   const [newSheetName, setNewSheetName] = useState<string>('Scanit Database');
   const [newFolderName, setNewFolderName] = useState<string>('Scanit Photos');
@@ -254,29 +264,127 @@ export const Settings: React.FC = () => {
     showMsg('Google Drive folder disconnected.');
   };
 
-  /* ================= PRODUCT FIELDS BUILDER ================= */
-  const handleAddField = () => {
-    const newField: ProductField = {
-      id: 'field_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      name: 'New Custom Field',
-      type: 'text',
-      required: false,
-      system: false,
-      options: [],
-    };
-    setFields((prev) => [...prev, newField]);
+  /* ================= PRODUCT FIELDS BUILDER & MODAL POPUP ================= */
+  const openAddFieldModal = () => {
+    setEditingFieldIndex(null);
+    setModalName('');
+    setModalType('text');
+    setModalRequired(false);
+    setModalOptions([]);
+    setModalOptionInput('');
+    setModalError(null);
+    setIsModalOpen(true);
   };
 
-  const handleFieldChange = (index: number, key: keyof ProductField, value: any) => {
-    setFields((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [key]: value };
-      return copy;
+  const openEditFieldModal = (index: number) => {
+    const f = fields[index];
+    setEditingFieldIndex(index);
+    setModalName(f.name);
+    setModalType(f.type);
+    setModalRequired(Boolean(f.required));
+    setModalOptions(f.options || []);
+    setModalOptionInput('');
+    setModalError(null);
+    setIsModalOpen(true);
+  };
+
+  const handleAddModalOption = () => {
+    if (!modalOptionInput.trim()) return;
+    const newOpts = modalOptionInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    setModalOptions((prev) => {
+      const combined = [...prev];
+      newOpts.forEach((opt) => {
+        if (!combined.some((o) => o.toLowerCase() === opt.toLowerCase())) {
+          combined.push(opt);
+        }
+      });
+      return combined;
     });
+    setModalOptionInput('');
+  };
+
+  const handleRemoveModalOption = (optIndex: number) => {
+    setModalOptions((prev) => prev.filter((_, i) => i !== optIndex));
+  };
+
+  const handleSaveModalField = async () => {
+    const trimmedName = modalName.trim();
+    if (!trimmedName) {
+      setModalError('Please enter a field name.');
+      return;
+    }
+
+    const isDuplicate = fields.some(
+      (f, idx) => idx !== editingFieldIndex && f.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (isDuplicate) {
+      setModalError('A field with this name already exists.');
+      return;
+    }
+
+    if (modalType === 'dropdown' && modalOptions.length === 0) {
+      setModalError('Please add at least one option for the dropdown field.');
+      return;
+    }
+
+    const updatedField: ProductField = {
+      id:
+        editingFieldIndex !== null
+          ? fields[editingFieldIndex].id
+          : 'field_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name: trimmedName,
+      type: modalType,
+      required: modalRequired,
+      system: false,
+      options: modalType === 'dropdown' ? modalOptions : [],
+    };
+
+    let nextFields: ProductField[];
+    if (editingFieldIndex !== null) {
+      nextFields = [...fields];
+      nextFields[editingFieldIndex] = updatedField;
+    } else {
+      nextFields = [...fields, updatedField];
+    }
+
+    setFields(nextFields);
+
+    // Save & sync directly from popup modal
+    try {
+      await saveProductFields(nextFields);
+      setSavedFieldsSnapshot(JSON.stringify(nextFields));
+
+      if (session && session.accessToken && config.spreadsheetId) {
+        saveProductFieldsToSheet(session.accessToken, config.spreadsheetId, nextFields).catch((err) =>
+          console.error('Background sheet headers sync failed:', err)
+        );
+      }
+      showMsg(`✓ Field "${updatedField.name}" saved!`);
+    } catch (e: any) {
+      showMsg('Failed to save field.', true);
+    }
+
+    setIsModalOpen(false);
   };
 
   const handleRemoveField = (index: number) => {
     setFields((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMoveField = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= fields.length) return;
+    setFields((prev) => {
+      const copy = [...prev];
+      const temp = copy[index];
+      copy[index] = copy[targetIndex];
+      copy[targetIndex] = temp;
+      return copy;
+    });
   };
 
   const handleSaveFields = async () => {
@@ -400,103 +508,128 @@ export const Settings: React.FC = () => {
         )}
       </article>
 
-      {/* 2. GOOGLE SHEETS CARD */}
+      {/* 2. PRODUCT FIELDS BUILDER */}
       <article className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-green-600"><IconSheet /></span>
+            <span className="text-gray-600"><IconSliders /></span>
             <div>
               <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                2. Google Sheet Connection
+                2. Product Fields Builder
               </h2>
-              <p className="text-[11px] text-gray-500">Store inventory product rows and dynamic fields</p>
+              <p className="text-[11px] text-gray-500">Configure custom product fields before creating Google Sheet</p>
             </div>
           </div>
-          {config.spreadsheetId && (
-            <span className="rounded bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-semibold text-green-700">
-              Connected
-            </span>
+          <button
+            type="button"
+            onClick={openAddFieldModal}
+            className="rounded-lg bg-blue-600 hover:bg-blue-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition flex items-center gap-1 cursor-pointer"
+          >
+            <span>+</span> Add Field
+          </button>
+        </div>
+
+        <div className="space-y-2.5">
+          {fields.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center">
+              <p className="text-xs text-gray-400 italic mb-3">No custom product fields configured.</p>
+              <button
+                type="button"
+                onClick={openAddFieldModal}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white transition"
+              >
+                + Add Your First Field
+              </button>
+            </div>
+          ) : (
+            fields.map((field, idx) => (
+              <div
+                key={field.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/80 p-3.5 hover:border-gray-300 transition"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Reorder Buttons */}
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveField(idx, 'up')}
+                      className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-20 px-1 font-bold"
+                      title="Move Up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === fields.length - 1}
+                      onClick={() => handleMoveField(idx, 'down')}
+                      className="text-[10px] text-gray-400 hover:text-gray-700 disabled:opacity-20 px-1 font-bold"
+                      title="Move Down"
+                    >
+                      ▼
+                    </button>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-gray-900 truncate">{field.name}</span>
+                      {field.required && (
+                        <span className="rounded bg-rose-100 text-rose-700 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                          Required
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5 flex-wrap">
+                      <span className="capitalize font-mono bg-white border border-gray-200 rounded px-1.5 py-0.5 text-[10px]">
+                        Type: {field.type}
+                      </span>
+                      {field.type === 'dropdown' && (
+                        <span className="text-[10px] text-blue-600 font-medium truncate">
+                          ({(field.options || []).length} options: {(field.options || []).join(', ') || 'None'})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => openEditFieldModal(idx)}
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition"
+                  >
+                    ✏ Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveField(idx)}
+                    className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+                    title="Delete Field"
+                  >
+                    ✕ Delete
+                  </button>
+                </div>
+              </div>
+            ))
           )}
         </div>
 
-        {config.spreadsheetId ? (
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3.5 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-gray-900 truncate">{config.spreadsheetName || 'Scanit Database'}</p>
-                <p className="text-[10px] font-mono text-gray-500 truncate">ID: {config.spreadsheetId}</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleDisconnectSheet}
-                className="text-xs text-rose-500 hover:underline ml-3 flex-shrink-0"
-              >
-                Disconnect
-              </button>
-            </div>
-            {config.spreadsheetUrl && (
-              <a
-                href={config.spreadsheetUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-green-700 hover:underline font-semibold"
-              >
-                <span>Open Google Sheet</span>
-                <span>↗</span>
-              </a>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Create New Custom Named Sheet */}
-            <div className="rounded-lg border border-green-100 bg-green-50/40 p-3 space-y-2">
-              <label className="block text-[11px] font-bold text-green-700 uppercase tracking-wider">
-                Create New Sheet with Custom Name
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={newSheetName}
-                  onChange={(e) => setNewSheetName(e.target.value)}
-                  placeholder="Enter sheet name (e.g. Scanit Database 2026)"
-                  className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-mono text-gray-900 focus:border-green-500 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  disabled={isProcessingSheet || !session}
-                  onClick={handleCreateSheet}
-                  className="rounded-lg bg-green-600 hover:bg-green-500 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50"
-                >
-                  {isProcessingSheet ? 'Creating...' : '+ Create Sheet'}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 my-1">
-              <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-[10px] text-gray-400 font-semibold uppercase">Or connect existing sheet</span>
-              <div className="h-px flex-1 bg-gray-200" />
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={sheetInput}
-                onChange={(e) => setSheetInput(e.target.value)}
-                placeholder="Paste Google Sheet URL or ID"
-                className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-mono text-gray-900 focus:border-green-500 focus:outline-none"
-              />
-              <button
-                type="button"
-                disabled={isProcessingSheet || !session}
-                onClick={handleConnectExistingSheet}
-                className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-gray-200 transition disabled:opacity-50"
-              >
-                Connect
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          disabled={!isFieldsDirty || isSavingFields}
+          onClick={handleSaveFields}
+          className={`w-full rounded-lg py-2.5 text-xs font-bold transition shadow-sm ${
+            isFieldsDirty
+              ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer opacity-100'
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+          }`}
+        >
+          {isSavingFields
+            ? 'Saving...'
+            : isFieldsDirty
+            ? 'Save Product Fields'
+            : '✓ Product Fields Saved'}
+        </button>
       </article>
 
       {/* 3. GOOGLE DRIVE FOLDER CARD */}
@@ -598,86 +731,114 @@ export const Settings: React.FC = () => {
         )}
       </article>
 
-      {/* 4. PRODUCT FIELDS BUILDER */}
-      <article className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+      {/* 4. GOOGLE SHEETS CARD (Locked until Product Fields exist) */}
+      <article className={`rounded-xl border bg-white p-5 space-y-4 ${fields.length === 0 ? 'border-amber-200 bg-amber-50/20' : 'border-gray-200'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-gray-600"><IconSliders /></span>
+            <span className="text-green-600"><IconSheet /></span>
             <div>
               <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                4. Product Fields Builder
+                4. Google Sheet Connection
               </h2>
-              <p className="text-[11px] text-gray-500">Add, edit, or delete any product attribute field</p>
+              <p className="text-[11px] text-gray-500">Store inventory product rows and dynamic fields</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleAddField}
-            className="rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-100 transition"
-          >
-            + Add Field
-          </button>
+          {config.spreadsheetId ? (
+            <span className="rounded bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+              Connected
+            </span>
+          ) : fields.length === 0 ? (
+            <span className="rounded bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+              🔒 Locked
+            </span>
+          ) : null}
         </div>
 
-        <div className="space-y-2.5">
-          {fields.length === 0 ? (
-            <p className="text-xs text-gray-400 italic py-2">No fields configured. Click "+ Add Field" to create fields.</p>
-          ) : (
-            fields.map((field, idx) => (
-              <div
-                key={field.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3"
+        {fields.length === 0 ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 font-semibold space-y-1">
+            <p>🔒 Google Sheet connection is locked.</p>
+            <p className="text-[11px] font-normal text-amber-700">
+              Please create at least one product field in section <strong>"2. Product Fields Builder"</strong> above before creating or connecting a Google Sheet.
+            </p>
+          </div>
+        ) : config.spreadsheetId ? (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-gray-900 truncate">{config.spreadsheetName || 'Scanit Database'}</p>
+                <p className="text-[10px] font-mono text-gray-500 truncate">ID: {config.spreadsheetId}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDisconnectSheet}
+                className="text-xs text-rose-500 hover:underline ml-3 flex-shrink-0"
               >
+                Disconnect
+              </button>
+            </div>
+            {config.spreadsheetUrl && (
+              <a
+                href={config.spreadsheetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] text-green-700 hover:underline font-semibold"
+              >
+                <span>Open Google Sheet</span>
+                <span>↗</span>
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Create New Custom Named Sheet */}
+            <div className="rounded-lg border border-green-100 bg-green-50/40 p-3 space-y-2">
+              <label className="block text-[11px] font-bold text-green-700 uppercase tracking-wider">
+                Create New Sheet with Custom Name
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
-                  value={field.name}
-                  onChange={(e) => handleFieldChange(idx, 'name', e.target.value)}
-                  placeholder="Field name"
-                  className="flex-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none"
+                  value={newSheetName}
+                  onChange={(e) => setNewSheetName(e.target.value)}
+                  placeholder="Enter sheet name (e.g. Scanit Database 2026)"
+                  className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-mono text-gray-900 focus:border-green-500 focus:outline-none"
                 />
-
-                <select
-                  value={field.type}
-                  onChange={(e) => handleFieldChange(idx, 'type', e.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="text">Text</option>
-                  <option value="number">Number</option>
-                  <option value="dropdown">Dropdown</option>
-                  <option value="date">Date</option>
-                  <option value="checkbox">Checkbox</option>
-                  <option value="longtext">Long Text</option>
-                </select>
-
                 <button
                   type="button"
-                  onClick={() => handleRemoveField(idx)}
-                  className="text-xs text-rose-500 hover:text-rose-600 p-1.5 font-bold"
-                  title="Delete Field"
+                  disabled={isProcessingSheet || !session || fields.length === 0}
+                  onClick={handleCreateSheet}
+                  className="rounded-lg bg-green-600 hover:bg-green-500 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  ✕ Delete
+                  {isProcessingSheet ? 'Creating...' : '+ Create Sheet'}
                 </button>
               </div>
-            ))
-          )}
-        </div>
+            </div>
 
-        <button
-          type="button"
-          disabled={!isFieldsDirty || isSavingFields}
-          onClick={handleSaveFields}
-          className={`w-full rounded-lg py-2.5 text-xs font-bold transition shadow-sm ${
-            isFieldsDirty
-              ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer opacity-100'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-          }`}
-        >
-          {isSavingFields
-            ? 'Saving...'
-            : isFieldsDirty
-            ? 'Save Product Fields'
-            : '✓ Product Fields Saved'}
-        </button>
+            <div className="flex items-center gap-2 my-1">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-[10px] text-gray-400 font-semibold uppercase">Or connect existing sheet</span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={sheetInput}
+                onChange={(e) => setSheetInput(e.target.value)}
+                placeholder="Paste Google Sheet URL or ID"
+                className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-mono text-gray-900 focus:border-green-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                disabled={isProcessingSheet || !session || fields.length === 0}
+                onClick={handleConnectExistingSheet}
+                className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-bold text-gray-800 hover:bg-gray-200 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Connect
+              </button>
+            </div>
+          </div>
+        )}
       </article>
 
       {/* DANGER ZONE */}
@@ -696,6 +857,175 @@ export const Settings: React.FC = () => {
           Clear Local Database
         </button>
       </article>
+
+      {/* MODAL POPUP FOR ADDING / EDITING FIELD */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white border border-gray-200 shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                {editingFieldIndex !== null ? 'Edit Product Field' : 'Add New Product Field'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 text-lg font-bold p-1"
+                title="Close Popup"
+              >
+                ✕
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs font-semibold text-rose-600">
+                {modalError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Field Name */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
+                  Field Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={modalName}
+                  onChange={(e) => {
+                    setModalName(e.target.value);
+                    if (modalError) setModalError(null);
+                  }}
+                  placeholder="e.g. Brand, Color, Condition, Location"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-xs text-gray-900 font-mono focus:border-blue-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              {/* Field Type */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
+                  Field Type <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={modalType}
+                  onChange={(e) => {
+                    setModalType(e.target.value as ProductField['type']);
+                    if (modalError) setModalError(null);
+                  }}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-xs text-gray-900 font-mono focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="text">Text (Single Line)</option>
+                  <option value="number">Number</option>
+                  <option value="dropdown">Dropdown / Select</option>
+                  <option value="date">Date</option>
+                  <option value="checkbox">Checkbox (Yes / No)</option>
+                  <option value="longtext">Long Text (Multi-Line)</option>
+                </select>
+              </div>
+
+              {/* Required Toggle - Name/Label FIRST, then Checkbox! */}
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3">
+                <div>
+                  <label htmlFor="modalRequiredToggle" className="text-xs font-bold text-gray-900 cursor-pointer block">
+                    Required Field
+                  </label>
+                  <p className="text-[11px] text-gray-500">
+                    Mandatory field when entering or scanning products
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  id="modalRequiredToggle"
+                  checked={modalRequired}
+                  onChange={(e) => setModalRequired(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+              </div>
+
+              {/* Dropdown Options Section (Visible if Type is 'dropdown') */}
+              {modalType === 'dropdown' && (
+                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-blue-900 uppercase tracking-wider">
+                      Dropdown Options ({modalOptions.length}) <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-blue-600 font-normal">
+                      (Type &amp; press Enter or separate with commas)
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={modalOptionInput}
+                      onChange={(e) => setModalOptionInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddModalOption();
+                        }
+                      }}
+                      placeholder="e.g. Red, Blue, Green"
+                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 font-mono focus:border-blue-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddModalOption}
+                      className="rounded-lg bg-blue-600 hover:bg-blue-500 px-3.5 py-2 text-xs font-bold text-white transition"
+                    >
+                      + Add Option
+                    </button>
+                  </div>
+
+                  {/* List of Option Tags */}
+                  {modalOptions.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {modalOptions.map((opt, optIdx) => (
+                        <span
+                          key={optIdx}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white border border-blue-200 px-3 py-1 text-xs font-medium text-gray-800 shadow-sm"
+                        >
+                          <span>{opt}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveModalOption(optIdx)}
+                            className="text-rose-500 hover:text-rose-700 text-xs font-bold ml-0.5"
+                            title="Remove option"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-rose-500 italic">
+                      No options added yet. Type options above and click "+ Add Option".
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveModalField}
+                className="rounded-lg bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition"
+              >
+                {editingFieldIndex !== null ? 'Save Changes' : '+ Add Field'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

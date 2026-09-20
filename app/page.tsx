@@ -102,7 +102,7 @@ export default function Home() {
       />
 
       {/* Main View Area */}
-      <div className="flex-1 pb-16 pt-2">
+      <div className="flex-1 pb-16 pt-2 w-full flex flex-col items-center">
         {inProductEntry ? (
           <ProductForm
             initialUpc={scannedUpc}

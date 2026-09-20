@@ -168,12 +168,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Product Entry</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Save product details to inventory</p>
+          <h2 className="text-xl font-bold text-gray-900">Product Entry</h2>
+          <p className="text-xs text-gray-500 mt-1">Save product details to inventory</p>
         </div>
         <button
           onClick={onCancel}
-          className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition shadow-sm"
         >
           Cancel
         </button>
@@ -181,8 +181,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
       <div className="space-y-4">
         {/* UPC Card */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-2">
-          <label className="block text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-2 shadow-sm">
+          <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider">
             Barcode / UPC <span className="text-rose-500">*</span>
           </label>
           <input
@@ -190,7 +190,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             inputMode="numeric"
             value={upc}
             onChange={(e) => setUpc(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm font-mono text-blue-600 dark:text-blue-400 font-bold focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm font-mono text-blue-600 font-bold focus:border-blue-500 focus:bg-white focus:outline-none"
             placeholder="UPC / EAN"
           />
           {errors['upc'] && (
@@ -199,8 +199,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         </div>
 
         {/* Dynamic Fields Form */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-4">
-          <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-gray-800 pb-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4 shadow-sm">
+          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">
             Product Attributes
           </h3>
 
@@ -211,17 +211,23 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
               if (field.type === 'checkbox') {
                 return (
-                  <div key={field.id} className="flex items-center gap-3 sm:col-span-2">
+                  <div
+                    key={field.id}
+                    className="flex items-center justify-between gap-3 sm:col-span-2 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5"
+                  >
+                    <label
+                      htmlFor={field.id}
+                      className="text-xs font-medium text-gray-900 cursor-pointer select-none flex-1"
+                    >
+                      {field.name} {field.required && <span className="text-rose-500">*</span>}
+                    </label>
                     <input
                       type="checkbox"
                       id={field.id}
                       checked={Boolean(val)}
                       onChange={(e) => handleFieldChange(field.id, e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
-                    <label htmlFor={field.id} className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                      {field.name} {field.required && <span className="text-rose-500">*</span>}
-                    </label>
                     {hasErr && <p className="text-xs text-rose-500">{hasErr}</p>}
                   </div>
                 );
@@ -230,14 +236,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               if (field.type === 'longtext') {
                 return (
                   <div key={field.id} className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
                       {field.name} {field.required && <span className="text-rose-500">*</span>}
                     </label>
                     <textarea
                       value={val || ''}
                       onChange={(e) => handleFieldChange(field.id, e.target.value)}
                       rows={3}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none"
                       placeholder={`Enter ${field.name}`}
                     />
                     {hasErr && <p className="mt-1 text-xs text-rose-500">{hasErr}</p>}
@@ -248,13 +254,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               if (field.type === 'dropdown') {
                 return (
                   <div key={field.id}>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
                       {field.name} {field.required && <span className="text-rose-500">*</span>}
                     </label>
                     <select
                       value={val || ''}
                       onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none"
                     >
                       <option value="">Select option...</option>
                       {(field.options || []).map((opt) => (
@@ -270,7 +276,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
               return (
                 <div key={field.id} className={field.id === 'title' ? 'sm:col-span-2' : ''}>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     {field.name} {field.required && <span className="text-rose-500">*</span>}
                   </label>
                   <input
@@ -278,7 +284,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     step={field.type === 'number' ? 'any' : undefined}
                     value={val !== undefined ? val : ''}
                     onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-950 px-3 py-2 text-xs text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none"
                     placeholder={`Enter ${field.name}`}
                   />
                   {hasErr && <p className="mt-1 text-xs text-rose-500">{hasErr}</p>}
@@ -289,9 +295,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         </div>
 
         {/* Photos Card */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 space-y-3">
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-            <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3 shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+            <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
               Product Photos ({photos.length}/5)
             </h3>
           </div>
@@ -299,7 +305,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           {photos.length > 0 ? (
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
               {photos.map((photo, idx) => (
-                <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 aspect-square">
+                <div key={idx} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-square">
                   <img
                     src={photo.dataUrl}
                     alt={`Photo ${idx + 1}`}
@@ -322,7 +328,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
           {photos.length < 5 && (
             <div className="flex gap-2 pt-1">
-              <label className="flex-1 cursor-pointer rounded-lg bg-gray-100 dark:bg-slate-800 py-2.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition">
+              <label className="flex-1 cursor-pointer rounded-lg bg-gray-100 py-2.5 text-center text-xs font-bold text-gray-700 hover:bg-gray-200 transition">
                 <span>📸 Camera</span>
                 <input
                   type="file"
@@ -333,7 +339,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 />
               </label>
 
-              <label className="flex-1 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-950 py-2.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900 transition">
+              <label className="flex-1 cursor-pointer rounded-lg border border-gray-200 bg-white py-2.5 text-center text-xs font-bold text-gray-700 hover:bg-gray-50 transition">
                 <span>🖼️ Gallery</span>
                 <input
                   type="file"
@@ -362,7 +368,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             type="button"
             disabled={isSaving}
             onClick={() => handleSave(false)}
-            className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 py-3 px-6 text-center text-xs font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition disabled:opacity-50"
+            className="rounded-lg border border-gray-200 bg-white py-3 px-6 text-center text-xs font-bold text-gray-800 hover:bg-gray-100 transition disabled:opacity-50 shadow-sm"
           >
             SAVE PRODUCT
           </button>

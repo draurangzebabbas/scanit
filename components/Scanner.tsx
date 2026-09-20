@@ -175,9 +175,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
   };
 
   return (
-    <div className="mx-auto max-w-xl p-4 sm:p-6 space-y-4 font-mono">
+    <div className="w-full max-w-xl mx-auto p-4 sm:p-6 space-y-4 font-mono flex flex-col items-center justify-center">
       {/* Viewport Container */}
-      <div className="relative overflow-hidden rounded-xl bg-black shadow-lg border border-gray-200 dark:border-gray-800 aspect-[3/4] max-h-[60vh]">
+      <div className="relative overflow-hidden rounded-xl bg-black shadow-lg border border-gray-200 dark:border-gray-800 aspect-[3/4] max-h-[60vh] w-full">
         <video
           ref={videoRef}
           playsInline
@@ -217,12 +217,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
       </div>
 
       {/* Status Bar */}
-      <div className="rounded-lg bg-white dark:bg-slate-900 px-4 py-2.5 text-center text-xs font-mono text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800">
+      <div className="w-full rounded-lg bg-white dark:bg-slate-900 px-4 py-2.5 text-center text-xs font-mono text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800">
         {status}
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
+      <div className="w-full flex gap-2">
         {!isScanning ? (
           <button
             onClick={startCamera}
@@ -253,7 +253,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
       </div>
 
       {/* Manual Entry */}
-      <form onSubmit={handleManualSubmit} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 space-y-2">
+      <form onSubmit={handleManualSubmit} className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 space-y-2">
         <label className="block text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
           Manual Barcode / UPC Entry
         </label>
