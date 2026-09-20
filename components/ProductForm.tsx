@@ -164,7 +164,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6 space-y-5 font-mono">
+    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 space-y-5 font-mono">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

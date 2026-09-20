@@ -107,7 +107,7 @@ export async function getProductFields(): Promise<ProductField[]> {
       const store = tx.objectStore('config');
       const req = store.get('PRODUCT_FIELDS');
       req.onsuccess = async () => {
-        if (req.result && Array.isArray(req.result.value) && req.result.value.length > 0) {
+        if (req.result !== undefined && Array.isArray(req.result.value)) {
           resolve(req.result.value);
         } else {
           await saveProductFields(DEFAULT_PRODUCT_FIELDS);

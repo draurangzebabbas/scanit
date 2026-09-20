@@ -26,7 +26,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const recent = products.slice(0, 4);
 
   return (
-    <section className="mx-auto max-w-4xl p-4 sm:p-6 space-y-6 font-mono">
+    <section className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-6 font-mono">
       {/* Hero Container */}
       <article className="rounded-xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

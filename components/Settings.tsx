@@ -65,9 +65,8 @@ export const Settings: React.FC = () => {
   const [session, setSession] = useState<GoogleUserSession | null>(null);
   const [config, setConfig] = useState<AppGoogleConfig>({});
   
-  // Product Fields state & saved snapshot for dirty detection
+  // Product Fields state
   const [fields, setFields] = useState<ProductField[]>([]);
-  const [savedFieldsSnapshot, setSavedFieldsSnapshot] = useState<string>('[]');
 
   // Modal Popup state for Adding / Editing Fields
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -90,7 +89,6 @@ export const Settings: React.FC = () => {
   const [isAuthorizing, setIsAuthorizing] = useState<boolean>(false);
   const [isProcessingSheet, setIsProcessingSheet] = useState<boolean>(false);
   const [isProcessingFolder, setIsProcessingFolder] = useState<boolean>(false);
-  const [isSavingFields, setIsSavingFields] = useState<boolean>(false);
 
   useEffect(() => {
     setSession(getStoredAuthSession());
@@ -105,7 +103,6 @@ export const Settings: React.FC = () => {
     });
     getProductFields().then((f) => {
       setFields(f);
-      setSavedFieldsSnapshot(JSON.stringify(f));
     });
   }, []);
 
@@ -114,8 +111,7 @@ export const Settings: React.FC = () => {
     setTimeout(() => setStatusMessage(null), 4500);
   };
 
-  // Check if fields have un-saved modifications
-  const isFieldsDirty = JSON.stringify(fields) !== savedFieldsSnapshot;
+
 
   /* ================= GOOGLE AUTH ================= */
   const handleGoogleAuth = async () => {
@@ -356,8 +352,6 @@ export const Settings: React.FC = () => {
     // Save & sync directly from popup modal
     try {
       await saveProductFields(nextFields);
-      setSavedFieldsSnapshot(JSON.stringify(nextFields));
-
       if (session && session.accessToken && config.spreadsheetId) {
         saveProductFieldsToSheet(session.accessToken, config.spreadsheetId, nextFields).catch((err) =>
           console.error('Background sheet headers sync failed:', err)
@@ -371,56 +365,38 @@ export const Settings: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  const handleRemoveField = (index: number) => {
-    setFields((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveField = async (index: number) => {
+    const nextFields = fields.filter((_, i) => i !== index);
+    setFields(nextFields);
+    try {
+      await saveProductFields(nextFields);
+      if (session && session.accessToken && config.spreadsheetId) {
+        saveProductFieldsToSheet(session.accessToken, config.spreadsheetId, nextFields).catch((err) =>
+          console.error('Background sheet headers sync failed:', err)
+        );
+      }
+      showMsg('✓ Field deleted.');
+    } catch (e) {
+      showMsg('Failed to delete field.', true);
+    }
   };
 
-  const handleMoveField = (index: number, direction: 'up' | 'down') => {
+  const handleMoveField = async (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= fields.length) return;
-    setFields((prev) => {
-      const copy = [...prev];
-      const temp = copy[index];
-      copy[index] = copy[targetIndex];
-      copy[targetIndex] = temp;
-      return copy;
-    });
-  };
-
-  const handleSaveFields = async () => {
-    if (!isFieldsDirty) return;
-
-    const names = fields.map((f) => f.name.trim().toLowerCase());
-    if (names.some((n) => !n)) {
-      showMsg('Every field must have a name.', true);
-      return;
-    }
-    if (new Set(names).size !== names.length) {
-      showMsg('Field names must be unique.', true);
-      return;
-    }
-
-    setIsSavingFields(true);
+    const copy = [...fields];
+    const temp = copy[index];
+    copy[index] = copy[targetIndex];
+    copy[targetIndex] = temp;
+    setFields(copy);
     try {
-      await saveProductFields(fields);
-      setSavedFieldsSnapshot(JSON.stringify(fields));
-
+      await saveProductFields(copy);
       if (session && session.accessToken && config.spreadsheetId) {
-        try {
-          await saveProductFieldsToSheet(session.accessToken, config.spreadsheetId, fields);
-          showMsg('✓ Product fields saved & synced to Google Sheet!');
-          return;
-        } catch (e: any) {
-          console.error('Failed to sync fields to Google Sheet:', e);
-        }
+        saveProductFieldsToSheet(session.accessToken, config.spreadsheetId, copy).catch((err) =>
+          console.error('Background sheet headers sync failed:', err)
+        );
       }
-
-      showMsg('✓ Product fields updated!');
-    } catch (e: any) {
-      showMsg('Failed to save fields.', true);
-    } finally {
-      setIsSavingFields(false);
-    }
+    } catch (e) {}
   };
 
   const handleClearDatabase = async () => {
@@ -432,7 +408,7 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <section className="mx-auto max-w-4xl p-4 sm:p-6 space-y-6 font-mono">
+    <section className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-6 font-mono">
       <header>
         <h1 className="text-xl font-bold text-gray-900">Settings &amp; Integration</h1>
         <p className="text-xs text-gray-500 mt-1">
@@ -529,6 +505,16 @@ export const Settings: React.FC = () => {
           </button>
         </div>
 
+        {/* Guide Banner */}
+        <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 space-y-1">
+          <p className="text-xs font-bold text-blue-800 flex items-center gap-1.5">
+            <span>💡</span> How Custom Fields Work
+          </p>
+          <p className="text-[11px] text-blue-700 leading-relaxed">
+            Add fields to match your workflow (e.g. Size, Color, Condition, Location). Changes save instantly to your browser — no manual save needed. Fields are per-browser, so each user can have a completely different setup. On a hard refresh or new device you&apos;ll start fresh, so set up your fields before creating your Google Sheet.
+          </p>
+        </div>
+
         <div className="space-y-2.5">
           {fields.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center">
@@ -613,23 +599,6 @@ export const Settings: React.FC = () => {
             ))
           )}
         </div>
-
-        <button
-          type="button"
-          disabled={!isFieldsDirty || isSavingFields}
-          onClick={handleSaveFields}
-          className={`w-full rounded-lg py-2.5 text-xs font-bold transition shadow-sm ${
-            isFieldsDirty
-              ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer opacity-100'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-          }`}
-        >
-          {isSavingFields
-            ? 'Saving...'
-            : isFieldsDirty
-            ? 'Save Product Fields'
-            : '✓ Product Fields Saved'}
-        </button>
       </article>
 
       {/* 3. GOOGLE DRIVE FOLDER CARD */}
