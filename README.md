@@ -47,3 +47,53 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 1. Push this project to GitHub (or use the [Vercel CLI](https://vercel.com/cli)).
 2. Import the `nextjsapp` directory into **Vercel**.
 3. Deploy! No environment variables or database setup required.
+
+
+------------------------------------------------------------
+You're almost there! The page shows two things are missing — I'll give you the exact text to paste for both.
+
+---
+
+## What You Need To Do
+
+### Step 1 — Click "Fix the issue"
+
+That will open the scope justification form for `auth/spreadsheets`. Paste this **exactly**:
+
+---
+
+**Scope justification text** (copy-paste this):
+
+> Scanit uses the Google Sheets API (`auth/spreadsheets`) to append inventory records to a spreadsheet that lives entirely in the user's own Google account. When a user scans a product barcode, Scanit appends one row of data (record ID, timestamp, UPC, custom product fields, and Google Drive photo URLs) to a Google Sheet that the user has connected in Settings. Scanit never reads, copies, or exports this data to any external server — all data stays in the user's own Google account. The spreadsheet scope is the minimum required to create the sheet structure (header row + two tabs) and append rows to it. This cannot be achieved with `drive.file` alone because the Drive API does not support cell-level operations on Google Sheets.
+
+---
+
+### Step 2 — Record a 2-minute Demo Video
+
+Google requires a YouTube video. Here's exactly what to record:
+
+| Time | What to show |
+|------|-------------|
+| 0:00–0:20 | Open `https://scanit.draurangzebabbas.com`, click **Sign in with Google** |
+| 0:20–0:40 | Complete Google OAuth — show the permission screen listing the scopes |
+| 0:40–1:10 | Go to **Settings** tab → show connecting a Google Sheet (paste a Sheet URL or click Create) |
+| 1:10–1:40 | Go to **Scanner** → scan a barcode → fill product form → tap **Save** |
+| 1:40–2:00 | Open the connected Google Sheet in a new tab → show the row was appended |
+
+Upload to YouTube as **Unlisted** (not public), then paste the URL into the **Video link** field.
+
+---
+
+### Step 3 — Fill "Additional Info" box
+
+Paste this:
+
+> Scanit is a free, offline-first barcode scanner and inventory management web app for individual sellers and small businesses. It uses Google Sign-In (OAuth 2.0) so users authorize their own Google Drive and Sheets — no backend server is involved. All user data remains exclusively in the user's personal Google account. Test user credentials: draurangzebabbas@gmail.com (developer account, already a test user). The app is live at https://scanit.draurangzebabbas.com. Privacy policy: https://scanit.draurangzebabbas.com/privacy — Terms: https://scanit.draurangzebabbas.com/terms
+
+---
+
+### Step 4 — Click Confirm
+
+That's it! After submitting, Google will email you with any follow-up questions within a few weeks.
+
+> 💡 **Tip while you wait**: Go to [Google Auth Platform → Audience](https://console.cloud.google.com/auth/audience?project=the-growth-machie) and click **"Publish App"** now — this removes the hard 403 block. Users will see a yellow warning screen instead but can still sign in via "Advanced → Proceed".
