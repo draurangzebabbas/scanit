@@ -17,10 +17,13 @@ export default function TermsPage() {
       <header className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-3">
           <a href="/" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-              <rect width="28" height="28" rx="7" fill="#1d77ff" />
-              <path d="M7 14h14M14 7v14" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+            <img
+              src="/Scanitlogo.webp"
+              alt="Scanit Logo"
+              width={28}
+              height={28}
+              className="rounded-lg object-cover border border-slate-200"
+            />
             <span className="font-bold text-lg text-slate-800">Scanit</span>
           </a>
           <span className="text-slate-400 text-sm ml-auto">Terms of Service</span>

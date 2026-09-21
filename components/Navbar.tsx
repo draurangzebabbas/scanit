@@ -74,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-2 focus:outline-none"
         >
           <img
-            src="/images/android-chrome-192x192.png"
+            src="/Scanitlogo.webp"
             alt="Scanit Logo"
             className="h-7 w-7 rounded-lg object-cover shadow-sm border border-gray-200"
           />

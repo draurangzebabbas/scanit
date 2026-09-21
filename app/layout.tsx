@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/images/android-chrome-512x512.png",
+        url: "/Scanitlogo.webp",
         width: 512,
         height: 512,
         alt: "Scanit - Barcode Scanner & Google Inventory Manager Logo",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     description:
       "Scan barcodes, capture product photos, and sync directly to Google Sheets & Drive with zero backend setup.",
     creator: "@scanit",
-    images: ["/images/android-chrome-512x512.png"],
+    images: ["/Scanitlogo.webp"],
   },
   robots: {
     index: true,
@@ -93,7 +93,7 @@ export default function RootLayout({
     operatingSystem: "Any",
     description:
       "Instant barcode scanning and inventory management tool integrating directly with Google Sheets and Google Drive.",
-    image: "https://scanit.draurangzebabbas.com/images/android-chrome-512x512.png",
+    image: "https://scanit.draurangzebabbas.com/Scanitlogo.webp",
     offers: {
       "@type": "Offer",
       price: "0",
