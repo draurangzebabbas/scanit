@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Scanit Team" }],
   creator: "Scanit",
   publisher: "Scanit",
-  metadataBase: new URL("https://scanit.vercel.app"),
+  metadataBase: new URL("https://scanit.draurangzebabbas.com"),
   alternates: {
     canonical: "/",
   },
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     title: "Scanit - Instant Barcode Scanner & Google Inventory Manager",
     description:
       "Scan barcodes instantly, manage custom product attributes, and save photos directly to your own Google Drive & Google Sheets.",
-    url: "https://scanit.vercel.app",
+    url: "https://scanit.draurangzebabbas.com",
     siteName: "Scanit",
     locale: "en_US",
     type: "website",
@@ -88,12 +88,12 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: "Scanit",
-    url: "https://scanit.vercel.app",
+    url: "https://scanit.draurangzebabbas.com",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Any",
     description:
       "Instant barcode scanning and inventory management tool integrating directly with Google Sheets and Google Drive.",
-    image: "https://scanit.vercel.app/images/android-chrome-512x512.png",
+    image: "https://scanit.draurangzebabbas.com/images/android-chrome-512x512.png",
     offers: {
       "@type": "Offer",
       price: "0",
