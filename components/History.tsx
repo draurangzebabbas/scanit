@@ -71,15 +71,37 @@ export const History: React.FC = () => {
       ];
     });
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+    const fileName = `inventory_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    // iOS Safari / Mobile Web Share API support (native Save to Files / Numbers / AirDrop dialog)
+    if (typeof navigator !== 'undefined' && navigator.canShare && navigator.share) {
+      try {
+        const file = new File([blob], fileName, { type: 'text/csv' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Scanit Inventory Export',
+          });
+          return;
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return; // User closed iOS share sheet intentionally
+      }
+    }
+
+    // Standard Blob URL download fallback (Desktop & browsers without File Share)
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `inventory_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.href = url;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 500);
   };
 
   // Strictly search by UPC
