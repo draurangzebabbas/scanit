@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 
 interface ScannerProps {
   onScanSuccess: (upc: string) => void;
@@ -19,6 +20,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
   const streamRef = useRef<MediaStream | null>(null);
   const detectorIntervalRef = useRef<any>(null);
   const isProcessingRef = useRef<boolean>(false);
+  const zxingReaderRef = useRef<BrowserMultiFormatReader | null>(null);
 
   const playBeep = () => {
     try {
@@ -126,6 +128,21 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
           return;
         } catch (e) {}
       }
+
+      // ZXing Fallback for platforms lacking BarcodeDetector (iOS, Desktop Firefox/Safari)
+      try {
+        const reader = new BrowserMultiFormatReader();
+        zxingReaderRef.current = reader;
+        if (videoRef.current) {
+          reader.decodeFromVideoElement(videoRef.current, (result, err) => {
+            // Guard: ignore stale callbacks fired after stopCamera() cleans up
+            if (result && !isProcessingRef.current && streamRef.current) {
+              handleDetectedBarcode(result.getText());
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {}
+
     } catch (error: any) {
       setIsScanning(false);
       setStatus('Camera access denied or unavailable. Please use manual entry.');
@@ -137,6 +154,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
       clearInterval(detectorIntervalRef.current);
       detectorIntervalRef.current = null;
     }
+    // ZXing has no reset() — nulling the ref is enough.
+    // The decode loop ends naturally when we stop the stream tracks below.
+    zxingReaderRef.current = null;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
