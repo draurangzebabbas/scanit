@@ -84,6 +84,30 @@ export async function syncSingleProduct(product: ProductRecord): Promise<boolean
       .substring(0, 100)                // Drive name limit is 32,767 but keep it short
       || 'UNKNOWN';
 
+    // Check for duplicate UPC entries in the same day folder in 1 single list query
+    let targetFolderName = upcBase;
+    try {
+      const listRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
+          `mimeType='application/vnd.google-apps.folder' and '${dayFolderId}' in parents and trashed=false and name contains '${upcBase}'`
+        )}&fields=files(name)&pageSize=100`,
+        { headers: { Authorization: `Bearer ${session.accessToken}` } }
+      );
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        const existingNames = new Set((listData.files || []).map((f: any) => f.name));
+        if (existingNames.has(upcBase)) {
+          let suffix = 1;
+          while (existingNames.has(`${upcBase}(${suffix})`)) {
+            suffix++;
+          }
+          targetFolderName = `${upcBase}(${suffix})`;
+        }
+      }
+    } catch (err) {
+      // If list query fails, fallback to upcBase
+    }
+
     // Direct folder creation inside the day folder
     const createRes = await fetch(
       'https://www.googleapis.com/drive/v3/files?fields=id,webViewLink',
@@ -94,7 +118,7 @@ export async function syncSingleProduct(product: ProductRecord): Promise<boolean
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: upcBase,
+          name: targetFolderName,
           mimeType: 'application/vnd.google-apps.folder',
           parents: [dayFolderId],
         }),
