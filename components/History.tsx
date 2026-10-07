@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { getAllProducts, deleteProductLocal, getProductFields, ProductRecord, ProductField } from '../lib/db';
-import { processSyncQueue, syncSingleProduct } from '../lib/googleSync';
+import { processSyncQueue, syncSingleProduct, subscribeSyncStatus } from '../lib/googleSync';
+
 
 export const History: React.FC = () => {
   const [products, setProducts] = useState<ProductRecord[]>([]);
@@ -21,6 +22,11 @@ export const History: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // Re-load whenever any background sync completes or fails
+    const unsubscribe = subscribeSyncStatus(() => {
+      loadData();
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
@@ -141,7 +147,8 @@ export const History: React.FC = () => {
     return matchesSearch;
   });
 
-  const pendingCount = products.filter((p) => p.syncStatus === 'pending' || p.syncStatus === 'failed').length;
+  // Include 'syncing' in pending count — stuck 'syncing' items from crashed sessions need Sync All too
+  const pendingCount = products.filter((p) => p.syncStatus === 'pending' || p.syncStatus === 'failed' || p.syncStatus === 'syncing').length;
 
   return (
     <div className="mx-auto max-w-4xl p-4 sm:p-6 space-y-5 font-mono">
@@ -216,6 +223,7 @@ export const History: React.FC = () => {
           {filtered.map((item) => {
             const isSynced = item.syncStatus === 'synced';
             const isFailed = item.syncStatus === 'failed';
+            const isStuckSyncing = item.syncStatus === 'syncing';
 
             return (
               <div
@@ -272,11 +280,25 @@ export const History: React.FC = () => {
                       )}
                     </div>
                   ) : isFailed ? (
+                    <div className="flex flex-col items-end gap-0.5">
+                      <button
+                        onClick={(e) => handleSyncSingle(item, e)}
+                        className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1 hover:bg-rose-100 whitespace-nowrap"
+                      >
+                        ✗ Failed (Retry)
+                      </button>
+                      {item.syncError && (
+                        <span className="text-[9px] text-rose-400 max-w-[160px] text-right leading-tight truncate" title={item.syncError}>
+                          {item.syncError}
+                        </span>
+                      )}
+                    </div>
+                  ) : isStuckSyncing ? (
                     <button
                       onClick={(e) => handleSyncSingle(item, e)}
-                      className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1 hover:bg-rose-100 whitespace-nowrap"
+                      className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-100 whitespace-nowrap"
                     >
-                      Failed (Retry)
+                      ↻ Retry Sync
                     </button>
                   ) : (
                     <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 whitespace-nowrap">

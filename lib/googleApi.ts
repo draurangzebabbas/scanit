@@ -230,18 +230,35 @@ export async function appendProductRowToSheet(
 ): Promise<void> {
   const cleanId = extractIdFromUrlOrId(spreadsheetId);
 
-  const headerRes = await fetch(
+  let headerRes = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${cleanId}/values/Products!1:1`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
     }
   );
 
-  if (!headerRes.ok) {
-    throw new Error('Failed to read header row from Products sheet.');
+  // If tab is missing OR header row is empty, auto-init the spreadsheet structure
+  const firstFetch = headerRes.ok ? await headerRes.json() : null;
+  const existingHeaders: string[] = (firstFetch?.values && firstFetch.values[0]) || [];
+
+  if (!headerRes.ok || existingHeaders.length === 0) {
+    // Products tab missing, or header row was never written — create/repair now
+    await setupSpreadsheetStructure(accessToken, cleanId, fieldDefs as ProductField[]);
+    // Re-fetch the header row after setup
+    headerRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${cleanId}/values/Products!1:1`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+    if (!headerRes.ok) {
+      throw new Error('Failed to read header row from Products sheet even after setup.');
+    }
   }
 
-  const headerData = await headerRes.json();
+  const headerData = !firstFetch || existingHeaders.length === 0
+    ? await headerRes.json()
+    : firstFetch;
   const headers: string[] = (headerData.values && headerData.values[0]) || SYSTEM_COLUMNS;
 
   // Build a map from field id -> field name for lookup
@@ -284,8 +301,10 @@ export async function appendProductRowToSheet(
     return '';
   });
 
+  // Use insertDataOption=INSERT_ROWS so new rows are ALWAYS added below existing data,
+  // never overwriting the header row even on an empty sheet
   const appendRes = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${cleanId}/values/Products!A1:append?valueInputOption=USER_ENTERED`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${cleanId}/values/Products!A:A:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
       headers: {
@@ -298,6 +317,7 @@ export async function appendProductRowToSheet(
 
   if (!appendRes.ok) {
     const err = await appendRes.json();
+
     throw new Error(err.error?.message || 'Failed to append product row to sheet.');
   }
 }

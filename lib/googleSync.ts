@@ -31,6 +31,13 @@ export async function notifyListeners() {
   listeners.forEach((l) => l(pending.length, isSyncing));
 }
 
+// Treat 'syncing' as pending too — if app crashed mid-sync, product is stuck in 'syncing'
+export async function getPendingAndStuckProducts() {
+  const { getAllProducts } = await import('./db');
+  const all = await getAllProducts();
+  return all.filter((p) => p.syncStatus === 'pending' || p.syncStatus === 'failed' || p.syncStatus === 'syncing');
+}
+
 export async function syncSingleProduct(product: ProductRecord): Promise<boolean> {
   const session = getStoredAuthSession();
   if (!session || !session.accessToken) {
@@ -183,12 +190,15 @@ export async function processSyncQueue(): Promise<void> {
   notifyListeners();
 
   try {
-    const pending = await getPendingProducts();
-    // Process sync queue with concurrency of 2 for fast yet safe batch syncing
-    const CONCURRENCY = 2;
-    for (let i = 0; i < pending.length; i += CONCURRENCY) {
-      const chunk = pending.slice(i, i + CONCURRENCY);
-      await Promise.all(chunk.map((product) => syncSingleProduct(product)));
+    // Also pick up products stuck in 'syncing' from a previous crashed session
+    const { getAllProducts } = await import('./db');
+    const all = await getAllProducts();
+    const pending = all.filter((p) =>
+      p.syncStatus === 'pending' || p.syncStatus === 'failed' || p.syncStatus === 'syncing'
+    );
+    // Process sequentially to avoid Google Sheets race conditions on concurrent appends
+    for (const product of pending) {
+      await syncSingleProduct(product);
     }
   } finally {
     isSyncing = false;

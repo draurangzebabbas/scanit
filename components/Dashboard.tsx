@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { getAllProducts, ProductRecord } from '../lib/db';
+import { subscribeSyncStatus } from '../lib/googleSync';
 
 interface DashboardProps {
   onStartScan: () => void;
@@ -16,8 +17,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [products, setProducts] = useState<ProductRecord[]>([]);
 
-  useEffect(() => {
+  const refreshProducts = () => {
     getAllProducts().then(setProducts);
+  };
+
+  useEffect(() => {
+    refreshProducts();
+    const unsubscribe = subscribeSyncStatus(() => {
+      refreshProducts();
+    });
+    return () => unsubscribe();
   }, []);
 
   const total = products.length;
