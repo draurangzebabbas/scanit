@@ -47,7 +47,12 @@ export const History: React.FC = () => {
   };
 
   const exportCSV = async () => {
-    if (!products.length) return;
+    // Always fetch all items directly from local storage so 100% of synced + unsynced records are included
+    const allRecords = await getAllProducts();
+    if (!allRecords.length) {
+      alert('No products to export.');
+      return;
+    }
     const currentFields = configuredFields.length > 0 ? configuredFields : await getProductFields();
 
     // Column order matches the linked Google Sheet exactly:
@@ -64,7 +69,7 @@ export const History: React.FC = () => {
 
     // Serialize a field value correctly for every field type
     const serializeVal = (val: any, fieldType: string): string => {
-      if (val === undefined || val === null) return '""';
+      if (val === undefined || val === null || val === '') return '""';
 
       switch (fieldType) {
         case 'checkbox':
@@ -78,9 +83,6 @@ export const History: React.FC = () => {
         }
 
         case 'date':
-          // Date string from <input type="date"> → YYYY-MM-DD, quoted
-          return `"${String(val ?? '').replace(/"/g, '""')}"`;
-
         case 'dropdown':
         case 'text':
         case 'longtext':
@@ -89,10 +91,9 @@ export const History: React.FC = () => {
       }
     };
 
-    // Export ALL products (not just the currently-filtered view)
-    const rows = products.map((p) => {
+    // Export ALL products (both synced and unsynced)
+    const rows = allRecords.map((p) => {
       const dynamicVals = currentFields.map((f) => {
-        // Values are stored by field id; fall back to field name for backwards compatibility
         const val =
           p.fields?.[f.id] !== undefined
             ? p.fields[f.id]
@@ -116,34 +117,18 @@ export const History: React.FC = () => {
     const fileName = `inventory_export_${new Date().toISOString().slice(0, 10)}.csv`;
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
 
-    // iOS Safari / Mobile Web Share API support (native Save to Files / Numbers / AirDrop dialog)
-    if (typeof navigator !== 'undefined' && navigator.canShare && navigator.share) {
-      try {
-        const file = new File([blob], fileName, { type: 'text/csv' });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: 'Scanit Inventory Export',
-          });
-          return;
-        }
-      } catch (err: any) {
-        if (err.name === 'AbortError') return; // User closed iOS share sheet intentionally
-      }
-    }
-
-    // Standard Blob URL download fallback (Desktop & browsers without File Share)
+    // Direct 1-click download across iOS, Android, and Desktop
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     setTimeout(() => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }, 500);
-
+    }, 1000);
   };
 
   // Strictly search by UPC

@@ -65,9 +65,6 @@ export async function syncSingleProduct(product: ProductRecord): Promise<boolean
   notifyListeners();
 
   try {
-    const photoUrls: string[] = [];
-    let upcFolderUrl = '';
-
     // Load product field definitions for id -> name mapping
     const fieldDefs = await getProductFields();
 
@@ -80,68 +77,49 @@ export async function syncSingleProduct(product: ProductRecord): Promise<boolean
     );
 
     // Create a UPC-named subfolder inside the day folder.
-    // Sanitize UPC so Drive API never rejects the folder name (remove chars illegal in Drive).
-    // Handle collisions: if "<upc>" already exists, try "<upc>(1)", "<upc>(2)", etc.
     const upcBase = (product.upc || 'UNKNOWN')
       .trim()
       .replace(/[\\/:*?"<>|]/g, '-')   // replace Drive-illegal chars
       .replace(/\s+/g, ' ')             // collapse whitespace
       .substring(0, 100)                // Drive name limit is 32,767 but keep it short
       || 'UNKNOWN';
-    let upcFolderId = '';
 
-    // Try to find an unused name (up to 99 collisions)
-    for (let attempt = 0; attempt <= 99; attempt++) {
-      const candidateName = attempt === 0 ? upcBase : `${upcBase}(${attempt})`;
-      // Check if a folder with this exact name exists in dayFolderId
-      const searchQuery = encodeURIComponent(
-        `name="${candidateName}" and mimeType="application/vnd.google-apps.folder" and "${dayFolderId}" in parents and trashed=false`
-      );
-      const checkRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=${searchQuery}&fields=files(id)&pageSize=1`,
-        { headers: { Authorization: `Bearer ${session.accessToken}` } }
-      );
-      const checkData = checkRes.ok ? await checkRes.json() : { files: [] };
-      if (!checkData.files || checkData.files.length === 0) {
-        // Name is free — create the folder
-        const createRes = await fetch(
-          'https://www.googleapis.com/drive/v3/files?fields=id,webViewLink',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: candidateName,
-              mimeType: 'application/vnd.google-apps.folder',
-              parents: [dayFolderId],
-            }),
-          }
-        );
-        if (!createRes.ok) throw new Error('Failed to create UPC subfolder in Drive.');
-        const created = await createRes.json();
-        upcFolderId = created.id;
-        upcFolderUrl = created.webViewLink || `https://drive.google.com/drive/folders/${upcFolderId}`;
-        break;
+    // Direct folder creation inside the day folder
+    const createRes = await fetch(
+      'https://www.googleapis.com/drive/v3/files?fields=id,webViewLink',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: upcBase,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [dayFolderId],
+        }),
       }
-    }
+    );
 
-    if (!upcFolderId) throw new Error('Could not create a unique UPC folder in Drive after 100 attempts.');
+    if (!createRes.ok) throw new Error('Failed to create UPC subfolder in Drive.');
+    const created = await createRes.json();
+    const upcFolderId = created.id;
+    const upcFolderUrl = created.webViewLink || `https://drive.google.com/drive/folders/${upcFolderId}`;
 
-    // 2. Upload photos into the UPC folder
+    // 2. Upload all photos IN PARALLEL into the UPC folder for maximum speed
+    let photoUrls: string[] = [];
     if (product.photos && product.photos.length > 0) {
-      for (let i = 0; i < product.photos.length; i++) {
-        const photo = product.photos[i];
-        const fileName = `${String(i + 1).padStart(2, '0')}_${product.upc || 'photo'}_${Date.now()}.jpg`;
-        const photoUrl = await uploadPhotoToDriveFolder(
-          session.accessToken,
-          upcFolderId,
-          photo,
-          fileName
-        );
-        photoUrls.push(photoUrl);
-      }
+      photoUrls = await Promise.all(
+        product.photos.map(async (photo, idx) => {
+          const fileName = `${String(idx + 1).padStart(2, '0')}_${product.upc || 'photo'}_${Date.now()}.jpg`;
+          return uploadPhotoToDriveFolder(
+            session.accessToken,
+            upcFolderId,
+            photo,
+            fileName
+          );
+        })
+      );
     }
 
     // 3. Append row to Google Sheet — Drive Folder link points to UPC-specific folder
@@ -182,8 +160,11 @@ export async function processSyncQueue(): Promise<void> {
 
   try {
     const pending = await getPendingProducts();
-    for (const product of pending) {
-      await syncSingleProduct(product);
+    // Process sync queue with concurrency of 2 for fast yet safe batch syncing
+    const CONCURRENCY = 2;
+    for (let i = 0; i < pending.length; i += CONCURRENCY) {
+      const chunk = pending.slice(i, i + CONCURRENCY);
+      await Promise.all(chunk.map((product) => syncSingleProduct(product)));
     }
   } finally {
     isSyncing = false;

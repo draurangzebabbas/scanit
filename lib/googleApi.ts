@@ -377,9 +377,12 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([u8arr], { type: mime });
 }
 
+// Session cache for Drive folder IDs to eliminate redundant API requests
+const folderCache = new Map<string, string>();
+
 /**
  * Finds a folder by name inside a parent, or creates it if it doesn't exist.
- * Returns the subfolder's ID.
+ * Returns the subfolder's ID. Uses an in-memory cache to avoid repeated Drive API searches.
  */
 export async function getOrCreateSubfolder(
   accessToken: string,
@@ -387,6 +390,12 @@ export async function getOrCreateSubfolder(
   subfolderName: string
 ): Promise<string> {
   const cleanParent = extractIdFromUrlOrId(parentFolderId);
+  const cacheKey = `${cleanParent}::${subfolderName}`;
+
+  if (folderCache.has(cacheKey)) {
+    return folderCache.get(cacheKey)!;
+  }
+
   // Search for an existing folder with this name inside the parent
   const query = encodeURIComponent(
     `name="${subfolderName}" and mimeType="application/vnd.google-apps.folder" and "${cleanParent}" in parents and trashed=false`
@@ -399,7 +408,9 @@ export async function getOrCreateSubfolder(
   if (searchRes.ok) {
     const searchData = await searchRes.json();
     if (searchData.files && searchData.files.length > 0) {
-      return searchData.files[0].id as string;
+      const foundId = searchData.files[0].id as string;
+      folderCache.set(cacheKey, foundId);
+      return foundId;
     }
   }
 
@@ -426,7 +437,9 @@ export async function getOrCreateSubfolder(
   }
 
   const created = await createRes.json();
-  return created.id as string;
+  const newId = created.id as string;
+  folderCache.set(cacheKey, newId);
+  return newId;
 }
 
 /**
