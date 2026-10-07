@@ -90,31 +90,17 @@ export function loadGoogleIdentityScript(): Promise<void> {
   });
 }
 
-// Prompt user for Google Login via GIS Token Client or OAuth popup
-export async function requestGoogleAccessToken(): Promise<GoogleUserSession> {
+export function requestGoogleAccessToken(): Promise<GoogleUserSession> {
   const clientId = DEFAULT_CLIENT_ID;
 
   if (!clientId) {
-    throw new Error('Google OAuth Client ID is missing. Please configure NEXT_PUBLIC_GOOGLE_CLIENT_ID in your environment variables.');
+    return Promise.reject(new Error('Google OAuth Client ID is missing. Please configure NEXT_PUBLIC_GOOGLE_CLIENT_ID in your environment variables.'));
   }
 
-  // On iOS Safari, window.open() MUST be called synchronously inside the user-gesture
-  // handler — any await before it breaks the gesture chain and Safari blocks the popup.
-  // So we open a blank window immediately (synchronously), then load GIS and redirect it.
-  let earlyPopup: Window | null = null;
-  try {
-    earlyPopup = window.open('', 'GoogleAuthPopup', 'width=500,height=600');
-  } catch (_) {}
-
-  await loadGoogleIdentityScript();
-
-  return new Promise((resolve, reject) => {
+  const doAuth = () => new Promise<GoogleUserSession>((resolve, reject) => {
     try {
       const google = (window as any).google;
       if (google && google.accounts && google.accounts.oauth2) {
-        // Close the early blank popup — GIS will handle its own consent flow
-        if (earlyPopup && !earlyPopup.closed) earlyPopup.close();
-
         const client = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: SCOPES,
@@ -142,57 +128,22 @@ export async function requestGoogleAccessToken(): Promise<GoogleUserSession> {
         });
         client.requestAccessToken();
       } else {
-        // Fallback: redirect the already-opened popup to the auth URL
-        // (popup was opened synchronously above to beat iOS gesture restriction)
-        const redirectUri = window.location.origin;
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
-          clientId
-        )}&redirect_uri=${encodeURIComponent(
-          redirectUri
-        )}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
-
-        const popup = earlyPopup;
-        if (!popup || popup.closed) {
-          throw new Error('Popup was blocked by your browser. Please allow popups for this site and try again.');
-        }
-        popup.location.href = authUrl;
-
-        const checkPopup = setInterval(() => {
-          try {
-            if (!popup || popup.closed) {
-              clearInterval(checkPopup);
-              reject(new Error('Google Authorization window closed by user.'));
-            }
-            if (popup.location.hash) {
-              const hashParams = new URLSearchParams(popup.location.hash.substring(1));
-              const token = hashParams.get('access_token');
-              const expiresIn = Number(hashParams.get('expires_in') || 3600);
-              popup.close();
-              clearInterval(checkPopup);
-
-              if (token) {
-                const expiresAt = Date.now() + expiresIn * 1000;
-                fetchUserInfo(token).then((userInfo) => {
-                  const session: GoogleUserSession = {
-                    accessToken: token,
-                    expiresAt,
-                    ...userInfo,
-                  };
-                  saveAuthSession(session);
-                  resolve(session);
-                });
-              } else {
-                reject(new Error('Authorization failed or denied.'));
-              }
-            }
-          } catch (e) {
-            // Ignore cross-origin errors while polling location
-          }
-        }, 500);
+        reject(new Error('Google Identity Services script not loaded. Please wait a moment and try again.'));
       }
     } catch (err: any) {
-      if (earlyPopup && !earlyPopup.closed) earlyPopup.close();
       reject(err);
     }
   });
+
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Cannot authenticate on server side'));
+  }
+
+  // If already loaded, call synchronously to preserve gesture
+  if ((window as any).google?.accounts?.oauth2) {
+    return doAuth();
+  } else {
+    // Attempt to load and then call, though this might get popup blocked on mobile
+    return loadGoogleIdentityScript().then(doAuth);
+  }
 }

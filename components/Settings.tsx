@@ -50,6 +50,7 @@ import {
   getStoredAuthSession,
   requestGoogleAccessToken,
   clearAuthSession,
+  loadGoogleIdentityScript,
   GoogleUserSession,
 } from '../lib/googleAuth';
 import {
@@ -92,6 +93,7 @@ export const Settings: React.FC = () => {
 
   useEffect(() => {
     setSession(getStoredAuthSession());
+    loadGoogleIdentityScript(); // Preload GIS script for smoother popup experience
     getGoogleConfig().then((c) => {
       setConfig(c);
       if (c.spreadsheetUrl || c.spreadsheetId) {
