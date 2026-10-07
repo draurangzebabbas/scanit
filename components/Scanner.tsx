@@ -200,6 +200,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess, onCancel }) => 
       <div className="relative overflow-hidden rounded-xl bg-black shadow-lg border border-gray-200 dark:border-gray-800 aspect-[3/4] max-h-[60vh] w-full">
         <video
           ref={videoRef}
+          autoPlay
           playsInline
           muted
           className="h-full w-full object-cover"

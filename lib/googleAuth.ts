@@ -98,12 +98,23 @@ export async function requestGoogleAccessToken(): Promise<GoogleUserSession> {
     throw new Error('Google OAuth Client ID is missing. Please configure NEXT_PUBLIC_GOOGLE_CLIENT_ID in your environment variables.');
   }
 
+  // On iOS Safari, window.open() MUST be called synchronously inside the user-gesture
+  // handler — any await before it breaks the gesture chain and Safari blocks the popup.
+  // So we open a blank window immediately (synchronously), then load GIS and redirect it.
+  let earlyPopup: Window | null = null;
+  try {
+    earlyPopup = window.open('', 'GoogleAuthPopup', 'width=500,height=600');
+  } catch (_) {}
+
   await loadGoogleIdentityScript();
 
   return new Promise((resolve, reject) => {
     try {
       const google = (window as any).google;
       if (google && google.accounts && google.accounts.oauth2) {
+        // Close the early blank popup — GIS will handle its own consent flow
+        if (earlyPopup && !earlyPopup.closed) earlyPopup.close();
+
         const client = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: SCOPES,
@@ -131,7 +142,8 @@ export async function requestGoogleAccessToken(): Promise<GoogleUserSession> {
         });
         client.requestAccessToken();
       } else {
-        // Fallback popup if GIS client fails to load
+        // Fallback: redirect the already-opened popup to the auth URL
+        // (popup was opened synchronously above to beat iOS gesture restriction)
         const redirectUri = window.location.origin;
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
           clientId
@@ -139,10 +151,11 @@ export async function requestGoogleAccessToken(): Promise<GoogleUserSession> {
           redirectUri
         )}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
 
-        const popup = window.open(authUrl, 'GoogleAuthPopup', 'width=500,height=600');
-        if (!popup) {
-          throw new Error('Popup blocked. Please allow popups for this site.');
+        const popup = earlyPopup;
+        if (!popup || popup.closed) {
+          throw new Error('Popup was blocked by your browser. Please allow popups for this site and try again.');
         }
+        popup.location.href = authUrl;
 
         const checkPopup = setInterval(() => {
           try {
@@ -178,6 +191,7 @@ export async function requestGoogleAccessToken(): Promise<GoogleUserSession> {
         }, 500);
       }
     } catch (err: any) {
+      if (earlyPopup && !earlyPopup.closed) earlyPopup.close();
       reject(err);
     }
   });

@@ -5,11 +5,6 @@ const SYSTEM_COLUMNS = [
   'Timestamp',
   'UPC',
   'Drive Folder',
-  'Photo 1',
-  'Photo 2',
-  'Photo 3',
-  'Photo 4',
-  'Photo 5',
 ];
 
 // Utility to extract Google ID from URL or return raw ID
@@ -230,7 +225,8 @@ export async function appendProductRowToSheet(
   spreadsheetId: string,
   record: ProductRecord,
   driveFolderUrl: string,
-  photoUrls: string[]
+  // fields parameter maps field id -> field name + type so we can populate columns correctly
+  fieldDefs: Array<{ id: string; name: string; type?: string }> = []
 ): Promise<void> {
   const cleanId = extractIdFromUrlOrId(spreadsheetId);
 
@@ -248,21 +244,39 @@ export async function appendProductRowToSheet(
   const headerData = await headerRes.json();
   const headers: string[] = (headerData.values && headerData.values[0]) || SYSTEM_COLUMNS;
 
+  // Build a map from field id -> field name for lookup
+  const idToName: Record<string, string> = {};
+  fieldDefs.forEach((f) => { idToName[f.id] = f.name; });
+
   const dataMap: Record<string, any> = {
     'Record ID': record.id,
     Timestamp: record.timestamp,
     UPC: record.upc,
     'Drive Folder': driveFolderUrl || '',
-    'Photo 1': photoUrls[0] || '',
-    'Photo 2': photoUrls[1] || '',
-    'Photo 3': photoUrls[2] || '',
-    'Photo 4': photoUrls[3] || '',
-    'Photo 5': photoUrls[4] || '',
   };
 
-  // Merge in all custom fields from the record
-  Object.keys(record.fields).forEach((key) => {
-    dataMap[key] = record.fields[key];
+  // Map each field value by its column name (not its id)
+  // record.fields is keyed by field id; sheet headers use field name
+  Object.keys(record.fields).forEach((fieldId) => {
+    const colName = idToName[fieldId] || fieldId; // fallback to id if no mapping
+    const fieldDef = fieldDefs.find((f) => f.id === fieldId);
+    const rawVal = record.fields[fieldId];
+
+    let val: any;
+    if (rawVal === undefined || rawVal === null || rawVal === '') {
+      val = '';
+    } else if (fieldDef && fieldDef.type === 'checkbox') {
+      // Booleans: send as true/false so Sheets renders a checkbox
+      val = Boolean(rawVal);
+    } else if (fieldDef && fieldDef.type === 'number') {
+      // Numbers: send as numeric type so Sheets doesn't left-align as text
+      const n = Number(rawVal);
+      val = Number.isFinite(n) ? n : '';
+    } else {
+      val = String(rawVal);
+    }
+
+    dataMap[colName] = val;
   });
 
   const rowValues = headers.map((header) => {
@@ -425,15 +439,25 @@ export async function getOrCreateDateFolderPath(
   rootFolderId: string,
   date: Date = new Date()
 ): Promise<string> {
-  const year = date.getFullYear().toString(); // e.g. "2026"
-  const monthLong = date.toLocaleString('en-US', { month: 'long' }); // e.g. "September"
-  const monthShort = date.toLocaleString('en-US', { month: 'short' }); // e.g. "Sep"
-  const day = date.getDate().toString().padStart(2, '0'); // e.g. "20"
-  const dayLabel = `${monthShort} ${day}`; // e.g. "Sep 20"
+  // Use hardcoded arrays — toLocaleString output varies by device OS language on Android/iOS
+  const MONTHS_LONG = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+  ];
+  const MONTHS_SHORT = [
+    'Jan','Feb','Mar','Apr','May','Jun',
+    'Jul','Aug','Sep','Oct','Nov','Dec'
+  ];
 
-  const yearId = await getOrCreateSubfolder(accessToken, rootFolderId, year);
+  const year      = date.getFullYear().toString();                      // e.g. "2026"
+  const monthLong = MONTHS_LONG[date.getMonth()];                       // e.g. "September"
+  const monthShort= MONTHS_SHORT[date.getMonth()];                      // e.g. "Sep"
+  const day       = String(date.getDate()).padStart(2, '0');            // e.g. "20"
+  const dayLabel  = `${monthShort} ${day}`;                            // e.g. "Sep 20"
+
+  const yearId  = await getOrCreateSubfolder(accessToken, rootFolderId, year);
   const monthId = await getOrCreateSubfolder(accessToken, yearId, monthLong);
-  const dayId = await getOrCreateSubfolder(accessToken, monthId, dayLabel);
+  const dayId   = await getOrCreateSubfolder(accessToken, monthId, dayLabel);
 
   return dayId;
 }

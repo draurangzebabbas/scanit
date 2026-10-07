@@ -50,24 +50,65 @@ export const History: React.FC = () => {
     if (!products.length) return;
     const currentFields = configuredFields.length > 0 ? configuredFields : await getProductFields();
 
-    // Build headers: Record ID, Timestamp, UPC, then all dynamic custom fields, then Sync Status & Drive info
+    // Column order matches the linked Google Sheet exactly:
+    // Record ID | Timestamp | UPC | Drive Folder | [all user fields] | Sync Status
     const dynamicHeaders = currentFields.map((f) => f.name);
-    const headers = ['Record ID', 'Timestamp', 'UPC', ...dynamicHeaders, 'Sync Status', 'Drive Folder URL', 'Photo Count'];
+    const headers = [
+      'Record ID',
+      'Timestamp',
+      'UPC',
+      'Drive Folder',
+      ...dynamicHeaders,
+      'Sync Status',
+    ];
 
+    // Serialize a field value correctly for every field type
+    const serializeVal = (val: any, fieldType: string): string => {
+      if (val === undefined || val === null) return '""';
+
+      switch (fieldType) {
+        case 'checkbox':
+          // Boolean → TRUE / FALSE (no quotes so spreadsheets treat as boolean)
+          return Boolean(val) ? 'TRUE' : 'FALSE';
+
+        case 'number': {
+          // Numeric → bare number (no quotes so spreadsheets treat as number)
+          const n = Number(val);
+          return Number.isFinite(n) ? String(n) : '""';
+        }
+
+        case 'date':
+          // Date string from <input type="date"> → YYYY-MM-DD, quoted
+          return `"${String(val ?? '').replace(/"/g, '""')}"`;
+
+        case 'dropdown':
+        case 'text':
+        case 'longtext':
+        default:
+          return `"${String(val ?? '').replace(/"/g, '""')}"`;
+      }
+    };
+
+    // Export ALL products (not just the currently-filtered view)
     const rows = products.map((p) => {
       const dynamicVals = currentFields.map((f) => {
-        const val = p.fields?.[f.id] !== undefined ? p.fields[f.id] : p.fields?.[f.name] || '';
-        return `"${String(val).replace(/"/g, '""')}"`;
+        // Values are stored by field id; fall back to field name for backwards compatibility
+        const val =
+          p.fields?.[f.id] !== undefined
+            ? p.fields[f.id]
+            : p.fields?.[f.name] !== undefined
+            ? p.fields[f.name]
+            : '';
+        return serializeVal(val, f.type);
       });
 
       return [
         `"${p.id}"`,
         `"${p.timestamp}"`,
         `"${p.upc}"`,
+        `"${p.driveFolderUrl || ''}"`,  // Drive Folder — 4th column, matches sheet
         ...dynamicVals,
-        `"${p.syncStatus}"`,
-        `"${p.driveFolderUrl || ''}"`,
-        `"${p.photos ? p.photos.length : 0}"`,
+        `"${p.syncStatus}"`,             // Sync Status — last column
       ];
     });
 
@@ -102,6 +143,7 @@ export const History: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }, 500);
+
   };
 
   // Strictly search by UPC
